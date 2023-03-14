@@ -14,7 +14,7 @@
  */
 import { Mina, PrivateKey, shutdown } from 'snarkyjs';
 import fs from 'fs/promises';
-import { Add } from './Add.js';
+import { Add } from './Add';
 
 // check command line arg
 let network = process.argv[2];
