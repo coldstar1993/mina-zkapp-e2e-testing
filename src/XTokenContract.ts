@@ -1,4 +1,4 @@
-import { Circuit, MerkleMapWitness, Field, method, Permissions, PrivateKey, PublicKey, Reducer, Signature, SmartContract, state, State, Struct, UInt32, UInt64, CircuitString, Poseidon, Account, AccountUpdate } from "snarkyjs"
+import { Circuit, MerkleMapWitness, Field, method, Permissions, PrivateKey, PublicKey, Reducer, Signature, SmartContract, state, State, Struct, UInt32, UInt64, CircuitString, Poseidon, Account, AccountUpdate, Bool } from "snarkyjs"
 import { Membership } from "./Membership";
 
 class PurchaseEvent extends Struct({ purchaser: PublicKey, purchasingAmount: UInt64 }) {
@@ -9,10 +9,9 @@ class PurchaseEvent extends Struct({ purchaser: PublicKey, purchasingAmount: UIn
 
 class VoteNote extends Struct({ voter: PublicKey, voteOption: UInt64 }) {
     static createEmptyEntity() {
-        return new VoteNote({ voter: PrivateKey.random().toPublicKey(), voteOption: UInt64.zero });
+        return new VoteNote({ voter: PublicKey.empty(), voteOption: UInt64.zero });
     }
 }
-
 
 export class XTokenContract extends SmartContract {
     // events
@@ -50,9 +49,11 @@ export class XTokenContract extends SmartContract {
     /**
      * init
      */
-    @method initInfo(supply: UInt64, maximumPurchasingAmount: UInt64, memberShipContractAddress: PublicKey, purchaseStartBlockHeight: UInt32, purchaseEndBlockHeight: UInt32, adminSignature: Signature) {
-        const hashx = Poseidon.hash([...supply.toFields(), ...maximumPurchasingAmount.toFields(), ...memberShipContractAddress.toFields(), ...purchaseStartBlockHeight.toFields(), ...purchaseEndBlockHeight.toFields()]);
-        adminSignature.verify(this.address, [hashx]).assertTrue();
+    @method initInfo(supply: UInt64, maximumPurchasingAmount: UInt64, memberShipContractAddress: PublicKey, purchaseStartBlockHeight: UInt32, purchaseEndBlockHeight: UInt32, adminPriKey: PrivateKey) {
+        const blockchainLength0 = this.network.blockchainLength.get();
+        this.network.blockchainLength.assertEquals(blockchainLength0);
+
+        this.address.assertEquals(adminPriKey.toPublicKey());
 
         this.account.zkappUri.set('https://github.com/coldstar1993/mina-zkapp-e2e-testing');
         this.account.tokenSymbol.set('XTKN');
@@ -70,9 +71,9 @@ export class XTokenContract extends SmartContract {
     /**
      * need proof to transfer Mina
      */
-    @method transferMina(to: PublicKey, amount: UInt64) {
+    @method transferMina(to: PublicKey, amount: UInt64, adminPriKey: PrivateKey) {
         const SUPPLY0 = this.SUPPLY.get();
-        this.SUPPLY.assertEquals(SUPPLY0);  
+        this.SUPPLY.assertEquals(SUPPLY0);
 
         const totalAmountInCirculation0 = this.totalAmountInCirculation.get();
         this.totalAmountInCirculation.assertEquals(totalAmountInCirculation0);
@@ -82,6 +83,9 @@ export class XTokenContract extends SmartContract {
 
         const blockchainLength0 = this.network.blockchainLength.get();
         this.network.blockchainLength.assertEquals(blockchainLength0);
+
+        // check if admin
+        this.address.assertEquals(adminPriKey.toPublicKey());
 
         // check precondition_network.blockHeight
         blockchainLength0.assertGreaterThan(this.purchaseEndBlockHeight.get(), 'meets precondition_network.blockchainLength');// TODO
@@ -101,7 +105,7 @@ export class XTokenContract extends SmartContract {
         const totalAmountInCirculation0 = this.totalAmountInCirculation.get();
         this.totalAmountInCirculation.assertEquals(totalAmountInCirculation0);
 
-        const memberShipContractAddress0 =this.memberShipContractAddress.get();
+        const memberShipContractAddress0 = this.memberShipContractAddress.get();
         this.memberShipContractAddress.assertEquals(memberShipContractAddress0);
 
         const purchaseStartBlockHeight0 = this.purchaseStartBlockHeight.get();
@@ -114,7 +118,10 @@ export class XTokenContract extends SmartContract {
 
         const maximumPurchasingAmount0 = this.maximumPurchasingAmount.get();
         this.maximumPurchasingAmount.assertEquals(maximumPurchasingAmount0);
-        
+
+        // no need to check account.balance
+        this.account.balance.assertNothing();
+
         // check enough
         SUPPLY0.sub(totalAmountInCirculation0).assertGreaterThanOrEqual(purchasingAmount, 'restAmount is enough for purchasingAmount');
 
@@ -132,7 +139,10 @@ export class XTokenContract extends SmartContract {
         let minaCost = purchasingAmount.mul(5e9);
         let purchaserAccountUpdate = AccountUpdate.createSigned(purchaser);
         purchaserAccountUpdate.balance.subInPlace(minaCost);
+
         this.balance.addInPlace(minaCost);
+        const acctBalance1 = this.account.balance.get().add(minaCost);
+        Circuit.log('acctBalance1: ', acctBalance1);
 
         Circuit.log('to mint...');
         // mint tokens
@@ -147,13 +157,12 @@ export class XTokenContract extends SmartContract {
         this.totalAmountInCirculation.set(totalAmountInCirculation1);
 
         // timing-lock Mina balance if totalAmountInCirculation == SUPPLY
-        this.account.balance.assertEquals(this.account.balance.get());
-        const initialMinimumBalance0 = Circuit.if(totalAmountInCirculation1.equals(SUPPLY0), this.account.balance.get().div(3).mul(2), UInt64.from(0));
+        const initialMinimumBalance0 = Circuit.if(totalAmountInCirculation1.equals(SUPPLY0), acctBalance1.div(3).mul(2), UInt64.from(0));
         Circuit.log('initialMinimumBalance0:', initialMinimumBalance0);
 
         const cliffTime0 = UInt32.from('2');// TODO
         const cliffAmount0 = UInt64.from(initialMinimumBalance0.div(10));
-        const vestingPeriod0 = UInt32.from('1');
+        const vestingPeriod0 = UInt32.from('1');// default == 1
         const vestingIncrement0 = UInt64.from(initialMinimumBalance0.div(10));
         this.timingLockToken(initialMinimumBalance0, cliffTime0, cliffAmount0, vestingPeriod0, vestingIncrement0);
     }
@@ -164,26 +173,39 @@ export class XTokenContract extends SmartContract {
      * @param voteOption 
      * @param witness 
      */
-    @method voteToProcessRestTokens(voter: PublicKey, voteOption: UInt64, witness: MerkleMapWitness) {
+    @method voteToProcessRestTokens(voter: PrivateKey, voteOption: UInt64, witness: MerkleMapWitness) {
+        const actionHashVote0 = this.actionHashVote.get();
+        this.actionHashVote.assertEquals(actionHashVote0);
         const totalAmountInCirculation0 = this.totalAmountInCirculation.get();
         this.totalAmountInCirculation.assertEquals(totalAmountInCirculation0);
         const SUPPLY0 = this.SUPPLY.get();
         this.SUPPLY.assertEquals(SUPPLY0);
-        const memberShipContractAddress0 =this.memberShipContractAddress.get();
+        const memberShipContractAddress0 = this.memberShipContractAddress.get();
         this.memberShipContractAddress.assertEquals(memberShipContractAddress0);
 
         // check if SUPPLY > totalAmountInCirculation
         SUPPLY0.assertGreaterThan(totalAmountInCirculation0);
 
         // check if the member is of token-keeper.
+        const voterPk = voter.toPublicKey();
         const membershipContract = new Membership(memberShipContractAddress0);
-        membershipContract.checkMemberShip(voter, witness).assertEquals(true);
+        membershipContract.checkMemberShip(voterPk, witness).assertEquals(true);
 
-        // check voteOption is valid
-        voteOption.assertGreaterThan(UInt64.from(0));
-        voteOption.assertLessThanOrEqual(UInt64.from(3));
+        // check voteOption is valid: in [1, 2]
+        voteOption.assertGreaterThanOrEqual(UInt64.from(1));
+        voteOption.assertLessThanOrEqual(UInt64.from(2));
 
-        this.reducer.dispatch(new VoteNote({ voter, voteOption }));
+        const pendingActions0 = this.reducer.getActions({ fromActionHash: this.actionHashVote.get() });
+        Circuit.log('pendingActions0: ', pendingActions0);
+
+        let { state: checkRs, actionsHash: newActionHash } = this.reducer.reduce(pendingActions0, Bool, (state: Bool, action: VoteNote) => {
+            return state.or(action.voter.equals(voterPk));
+        }, { state: Bool(false), actionsHash: actionHashVote0 });
+
+        // check if vote again
+        checkRs.assertEquals(Bool(false));
+
+        this.reducer.dispatch(new VoteNote({ voter: voterPk, voteOption }));
     }
 
     @method rollupVoteNote() {
@@ -193,8 +215,8 @@ export class XTokenContract extends SmartContract {
         this.totalAmountInCirculation.assertEquals(totalAmountInCirculation0);
         const SUPPLY0 = this.SUPPLY.get();
         this.SUPPLY.assertEquals(SUPPLY0);
-        
-        const memberShipContractAddress0 =this.memberShipContractAddress.get();
+
+        const memberShipContractAddress0 = this.memberShipContractAddress.get();
         this.memberShipContractAddress.assertEquals(memberShipContractAddress0);
 
         const purchaseEndBlockHeight0 = this.purchaseEndBlockHeight.get();
@@ -234,7 +256,7 @@ export class XTokenContract extends SmartContract {
         // update actionHash
         this.actionHashVote.set(newActionHash);
 
-        // timing-lock Mina balance
+        // meanwhile, timing-lock Mina balance
         this.account.balance.assertEquals(this.account.balance.get());
         const initialMinimumBalance0 = this.account.balance.get().div(3).mul(2);
         const cliffTime0 = UInt32.from('2');// TODO
