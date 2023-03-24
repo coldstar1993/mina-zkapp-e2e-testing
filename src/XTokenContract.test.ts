@@ -1,5 +1,5 @@
-import { AccountUpdate, fetchAccount, Field, isReady, MerkleMap, Mina, Poseidon, PrivateKey, PublicKey, Reducer, shutdown, Signature, UInt32, UInt64 } from 'snarkyjs';
-import { XTokenContract } from './XTokenContract.js';
+import { AccountUpdate, Experimental, fetchAccount, Field, isReady, MerkleMap, Mina, Poseidon, PrivateKey, PublicKey, Reducer, shutdown, Signature, UInt32, UInt64 } from 'snarkyjs';
+import { XTokenContract, NormalTokenUser } from './XTokenContract.js';
 import { getProfiler } from "./profiler.js";
 import { Membership } from './Membership.js';
 
@@ -21,6 +21,8 @@ describe('test fuctions inside XTokenContract', () => {
         let membershipZkAppAddress: PublicKey;
         let membershipZkApp: Membership;
         let membershipVerificationKey: any;
+
+        let normalTokenUserVerificationKey: any;
 
         let purchaseStartBlockHeight: UInt32;
         let purchaseEndBlockHeight: UInt32;
@@ -51,7 +53,7 @@ describe('test fuctions inside XTokenContract', () => {
                 await tx.prove();
                 XTokenContractTestProfiler.stop();
                 tx.sign([senderKey, userPriKey]);
-                console.log('Section-1_tx: ', tx.toJSON());
+                console.log('constructOneUserAndPurchase_tx: ', tx.toJSON());
                 XTokenContractTestProfiler.start('tx.send()');
                 await tx.send();
                 XTokenContractTestProfiler.stop();
@@ -75,6 +77,8 @@ describe('test fuctions inside XTokenContract', () => {
             XTokenContractTestProfiler.start('XTokenContract.compile');
             zkAppVerificationKey = (await XTokenContract.compile()).verificationKey;
             XTokenContractTestProfiler.stop();
+
+            normalTokenUserVerificationKey = NormalTokenUser.compile()
 
             Blockchain = deployToBerkeley ? Mina.Network('https://proxy.berkeley.minaexplorer.com/graphql') : Mina.LocalBlockchain({ proofsEnabled: true });
             Mina.setActiveInstance(Blockchain);
@@ -576,19 +580,87 @@ describe('test fuctions inside XTokenContract', () => {
         });
         */
 
-        it(`transfer custom tokens`, async () => {
+        /*         it(`transfer custom tokens without token owner's signature-- !! Need to Research!!`, async () => {
+                    let userPriKey = PrivateKey.random();
+                    let userPubKey = userPriKey.toPublicKey();
+                    console.log('userPubKey: ', userPubKey.toBase58());
+                    await constructOneUserAndPurchase(userPriKey, maximumPurchasingAmount, (senderAccount0: PublicKey, userPriKey0: PrivateKey) => {
+                        let accUpdt = AccountUpdate.fundNewAccount(senderAccount0, 2);
+                        accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 15 * 1e9 });
+                    });
+        
+                    let userPriKey1 = PrivateKey.random();
+                    let userPubKey1 = userPriKey1.toPublicKey();
+                    console.log('userPubKey1: ', userPubKey1.toBase58());
+                    let tx = await Mina.transaction(userPubKey, () => {
+                        AccountUpdate.fundNewAccount(userPubKey);
+                        zkApp.token.send({ from: userPubKey, to: userPubKey1, amount: 1 });
+                        AccountUpdate.attachToTransaction(zkApp.self);
+                    });
+                    await tx.prove();
+                    tx.sign([userPriKey, userPriKey1]);
+                    console.log('zkApp.token.send_tx: ', tx.toJSON());
+                    await tx.send();
+                }) */
+
+        it(`transfer custom tokens with proof authorization`, async () => {
+            let tokenId = zkApp.token.id;
             let userPriKey = PrivateKey.random();
+            let userPubKey = userPriKey.toPublicKey();
+            console.log('userPubKey: ', userPubKey.toBase58());
+
+            let userPriKey1 = PrivateKey.random();
+            let userPubKey1 = userPriKey1.toPublicKey();
+            console.log('userPubKey1: ', userPubKey1.toBase58());
+
+            // deploy NormalTokenUser Zkapp
+            let tx0 = await Mina.transaction(senderAccount, () => {
+                AccountUpdate.fundNewAccount(senderAccount, 2);
+                zkApp.deployZkapp(userPubKey, NormalTokenUser._verificationKey!);
+                zkApp.deployZkapp(userPubKey1, NormalTokenUser._verificationKey!);
+            });
+            await tx0.prove();
+            tx0.sign([senderKey, userPriKey, userPriKey1]);
+            console.log('deploy NormalTokenUser tx: ', tx0.toJSON());
+            await tx0.send();
+
+            // user purchase token
             await constructOneUserAndPurchase(userPriKey, maximumPurchasingAmount, (senderAccount0: PublicKey, userPriKey0: PrivateKey) => {
-                let accUpdt = AccountUpdate.fundNewAccount(senderAccount0, 2);
+                // let accUpdt = AccountUpdate.fundNewAccount(senderAccount0);
+                let accUpdt = AccountUpdate.createSigned(senderAccount0);
+                accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 15 * 1e9 });
+            });
+            // user1 purchase token
+            await constructOneUserAndPurchase(userPriKey1, maximumPurchasingAmount, (senderAccount0: PublicKey, userPriKey0: PrivateKey) => {
+                let accUpdt = AccountUpdate.createSigned(senderAccount0);
                 accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 15 * 1e9 });
             });
 
-            let userPriKey2 = PrivateKey.random();
-            let tx = await Mina.transaction(senderAccount, () => {
-                AccountUpdate.fundNewAccount(senderAccount, 2);
-
+            let normalTokenUser = new NormalTokenUser(userPubKey, zkApp.token.id);
+            let tx1 = await Mina.transaction(userPubKey, () => {
+                let approveSendingCallback = Experimental.Callback.create(
+                    normalTokenUser,
+                    'approveTokenTransfer',
+                    [UInt64.from(1)]
+                );
+                zkApp.approveTransferCallback(
+                    userPubKey,
+                    userPubKey1,
+                    UInt64.from(1),
+                    approveSendingCallback
+                );
             });
+            await tx1.prove();
+            tx1.sign([userPriKey]);
+            console.log('approveTokenTransfer\'s tx:', tx1.toJSON());
+            await tx1.send();
 
+            expect(
+                Mina.getBalance(userPubKey, tokenId).value.toBigInt()
+            ).toEqual(1n);
+            expect(
+                Mina.getBalance(userPubKey1, tokenId).value.toBigInt()
+            ).toEqual(3n);
         })
     }
 

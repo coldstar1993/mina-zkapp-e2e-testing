@@ -1,4 +1,4 @@
-import { Circuit, MerkleMapWitness, Field, method, Permissions, PrivateKey, PublicKey, Reducer, Signature, SmartContract, state, State, Struct, UInt32, UInt64, CircuitString, Poseidon, Account, AccountUpdate, Bool } from "snarkyjs"
+import { Int64, Experimental, Circuit, MerkleMapWitness, Field, method, Permissions, PrivateKey, PublicKey, Reducer, Signature, SmartContract, state, State, Struct, UInt32, UInt64, CircuitString, Poseidon, Account, AccountUpdate, Bool, VerificationKey } from "snarkyjs"
 import { Membership } from "./Membership";
 
 class PurchaseEvent extends Struct({ purchaser: PublicKey, purchasingAmount: UInt64 }) {
@@ -52,7 +52,6 @@ export class XTokenContract extends SmartContract {
     @method initInfo(supply: UInt64, maximumPurchasingAmount: UInt64, memberShipContractAddress: PublicKey, purchaseStartBlockHeight: UInt32, purchaseEndBlockHeight: UInt32, adminPriKey: PrivateKey) {
         const blockchainLength0 = this.network.blockchainLength.get();
         this.network.blockchainLength.assertEquals(blockchainLength0);
-
         this.address.assertEquals(adminPriKey.toPublicKey());
 
         this.account.zkappUri.set('https://github.com/coldstar1993/mina-zkapp-e2e-testing');
@@ -269,5 +268,43 @@ export class XTokenContract extends SmartContract {
     timingLockToken(initialMinimumBalanceX: UInt64, cliffTimeX: UInt32, cliffAmountX: UInt64, vestingPeriodX: UInt32, vestingIncrementX: UInt64) {
         // timing-lock Mina balance
         this.account.timing.set({ initialMinimumBalance: initialMinimumBalanceX, cliffTime: cliffTimeX, cliffAmount: cliffAmountX, vestingPeriod: vestingPeriodX, vestingIncrement: vestingIncrementX });
+    }
+
+    @method approveTransferCallback(
+        senderAddress: PublicKey,
+        receiverAddress: PublicKey,
+        amount: UInt64,
+        callback: Experimental.Callback<any>
+    ) {
+        let layout = AccountUpdate.Layout.NoChildren; // Allow only 1 accountUpdate with no children
+        let senderAccountUpdate = this.approve(callback, layout);
+        let negativeAmount = Int64.fromObject(
+            senderAccountUpdate.body.balanceChange
+        );
+        negativeAmount.assertEquals(Int64.from(amount).neg());
+        let tokenId = this.token.id;
+        senderAccountUpdate.body.tokenId.assertEquals(tokenId);
+        senderAccountUpdate.body.publicKey.assertEquals(senderAddress);
+        let receiverAccountUpdate = Experimental.createChildAccountUpdate(
+            this.self,
+            receiverAddress,
+            tokenId
+        );
+        receiverAccountUpdate.balance.addInPlace(amount);
+    }
+
+    @method deployZkapp(address: PublicKey, verificationKey: VerificationKey) {
+        let tokenId = this.token.id;
+        let zkapp = AccountUpdate.defaultAccountUpdate(address, tokenId);
+        this.approve(zkapp);
+        zkapp.account.permissions.set(Permissions.default());
+        zkapp.account.verificationKey.set(verificationKey);
+        zkapp.requireSignature();
+    }
+}
+
+export class NormalTokenUser extends SmartContract {
+    @method approveTokenTransfer(amount: UInt64) {
+        this.balance.subInPlace(amount);
     }
 }
