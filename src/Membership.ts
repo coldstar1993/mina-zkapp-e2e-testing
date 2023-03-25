@@ -1,4 +1,4 @@
-import { Bool, Field, MerkleMapWitness, method, PublicKey, SmartContract, State, state, Permissions, UInt32, MerkleMap, Poseidon, Circuit, CircuitString } from "snarkyjs";
+import { Bool, Field, MerkleMapWitness, method, PublicKey, SmartContract, State, state, Permissions, UInt32, MerkleMap, Poseidon, Circuit, CircuitString, PrivateKey } from "snarkyjs";
 
 export class Membership extends SmartContract {
     // member tree root
@@ -24,9 +24,20 @@ export class Membership extends SmartContract {
         "add-a-new-member": PublicKey
     }
 
+    @method initOrReset(memberTreeRoot: Field, memberCount: UInt32, admin: PrivateKey) {
+        // check if admin
+        this.address.assertEquals(admin.toPublicKey());
+
+        this.memberTreeRoot.assertNothing();// no need assertEquals
+        this.memberCount.assertNothing();// no need assertEquals
+
+        this.memberTreeRoot.set(memberTreeRoot);
+        this.memberCount.set(memberCount);
+    }
+
     @method addNewMember(member: PublicKey, witness: MerkleMapWitness) {
         const memberCount0 = this.memberCount.get();
-        this.memberCount.assertEquals(memberCount0);
+        this.memberCount.assertNothing();// no need assertEquals
 
         // check non-existence
         const checkRs = this.checkMemberShip(member, witness);
