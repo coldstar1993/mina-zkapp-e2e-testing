@@ -340,20 +340,11 @@ describe('test fuctions inside XTokenContract', () => {
             accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
         });
 
-        if (deployToBerkeley) {
-            await printAllContractAppStatesInBerkeley();
-
-            let mmbrRt = await membershipZkApp.memberTreeRoot.fetch();
-            expect(mmbrRt).not.toEqual(memberTreeRoot0);
-            expect(mmbrRt).toEqual(xTokenContractMerkleMap.getRoot());
-            expect(await membershipZkApp.memberCount.fetch()).toEqual(UInt32.from(1));
-            expect(await zkApp.totalAmountInCirculation.fetch()).toEqual(totalAmountInCirculation0.add(2));
-        } else {
             expect(membershipZkApp.memberTreeRoot.get()).not.toEqual(memberTreeRoot0);
             expect(membershipZkApp.memberTreeRoot.get()).toEqual(xTokenContractMerkleMap.getRoot());
             expect(membershipZkApp.memberCount.get()).toEqual(UInt32.from(1));
             expect(zkApp.totalAmountInCirculation.get()).toEqual(totalAmountInCirculation0.add(2));
-        }
+
 
     })
 
@@ -385,17 +376,11 @@ describe('test fuctions inside XTokenContract', () => {
             accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
         });
 
-        if (deployToBerkeley) {
-            await printAllContractAppStatesInBerkeley();
 
-            expect(await membershipZkApp.memberTreeRoot.fetch()).toEqual(memberTreeRoot0);// should equal
-            expect(await membershipZkApp.memberCount.fetch()).toEqual(memberCount0);
-            expect(await zkApp.totalAmountInCirculation.fetch()).toEqual(totalAmountInCirculation0);
-        } else {
             expect(membershipZkApp.memberTreeRoot.get()).toEqual(memberTreeRoot0);// should equal
             expect(membershipZkApp.memberCount.get()).toEqual(memberCount0);
             expect(zkApp.totalAmountInCirculation.get()).toEqual(totalAmountInCirculation0);
-        }
+        
     });
 
     /*
@@ -417,17 +402,11 @@ describe('test fuctions inside XTokenContract', () => {
                 accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
             });
     
-                        if(deployToBerkeley){
-                                        await printAllContractAppStatesInBerkeley();
 
-                                        expect(await membershipZkApp.memberTreeRoot.fetch()).toEqual(memberTreeRoot0);
-            expect(await membershipZkApp.memberCount.fetch()).toEqual(memberCount0);
-            expect(await zkApp.totalAmountInCirculation.fetch()).toEqual(totalAmountInCirculation0);
-                        }else {
             expect(membershipZkApp.memberTreeRoot.get()).toEqual(memberTreeRoot0);
             expect(membershipZkApp.memberCount.get()).toEqual(memberCount0);
             expect(zkApp.totalAmountInCirculation.get()).toEqual(totalAmountInCirculation0);
-                        }
+                        
         });
     
         it(`CHECK tx should fail when purchase tokens when exceeding maximum purchasing amount`, async () => {  
@@ -445,17 +424,11 @@ describe('test fuctions inside XTokenContract', () => {
                 accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
             });
     
-            if(deployToBerkeley){
-                            await printAllContractAppStatesInBerkeley();
 
-                            expect(await membershipZkApp.memberTreeRoot.fetch()).toEqual(memberTreeRoot0);
-            expect(await membershipZkApp.memberCount.fetch()).toEqual(memberCount0);
-            expect(await zkApp.totalAmountInCirculation.fetch()).toEqual(totalAmountInCirculation0);
-            } else {
             expect(membershipZkApp.memberTreeRoot.get()).toEqual(memberTreeRoot0);
             expect(membershipZkApp.memberCount.get()).toEqual(memberCount0);
             expect(zkApp.totalAmountInCirculation.get()).toEqual(totalAmountInCirculation0);
-            }
+            
         });
     
     
@@ -490,17 +463,11 @@ describe('test fuctions inside XTokenContract', () => {
                 accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
             });
 
-            if(deployToBerkeley){                            
-                await printAllContractAppStatesInBerkeley();
 
-                            expect(await membershipZkApp.memberTreeRoot.fetch()).toEqual(memberTreeRoot0);
-            expect(await membershipZkApp.memberCount.fetch()).toEqual(memberCount0);
-            expect(await zkApp.totalAmountInCirculation.fetch()).toEqual(totalAmountInCirculation0);
-            } else {
             expect(membershipZkApp.memberTreeRoot.get()).toEqual(memberTreeRoot0);
             expect(membershipZkApp.memberCount.get()).toEqual(memberCount0);
             expect(zkApp.totalAmountInCirculation.get()).toEqual(totalAmountInCirculation0);
-            }
+            
         });
     
         it(`noprint - CHECK if timing-lock Mina balance when totalAmountInCirculation == SUPPLY`, async () => {
@@ -606,6 +573,8 @@ describe('test fuctions inside XTokenContract', () => {
             } catch (error) {
                 console.error(error);
             }
+            console.log('ZkAppAcctInfo: ', (await syncZkAppAcctInfo()));
+
             expect(zkApp.reducer.getActions({ fromActionHash: Reducer.initialActionsHash }).length).toBeGreaterThan(pendingActions0.length);
     
             console.log('========== vote again ==========')
@@ -623,6 +592,8 @@ describe('test fuctions inside XTokenContract', () => {
             } catch (error) {
                 console.error(error);
             }
+            console.log('ZkAppAcctInfo: ', (await syncZkAppAcctInfo()));
+
             expect(zkApp.reducer.getActions({ fromActionHash: Reducer.initialActionsHash }).length).toEqual(pendingActions1.length);
         })
      */
@@ -667,6 +638,8 @@ describe('test fuctions inside XTokenContract', () => {
         await voteTx2.send();
 
         console.log('========================check rollup can\'t be executed without 51% member\'s votes========================');
+        console.log('ZkAppAcctInfo: ', (await syncZkAppAcctInfo()));
+
         // check rollup can't be executed without 51% member's votes.
         let actionHashVote0 = zkApp.actionHashVote.get();
         try {
@@ -680,6 +653,8 @@ describe('test fuctions inside XTokenContract', () => {
         } catch (error) {
             console.error(error);
         }
+                console.log('ZkAppAcctInfo: ', (await syncZkAppAcctInfo()));
+
         expect(zkApp.actionHashVote.get()).toEqual(actionHashVote0);
 
         console.log('========================thirdUser starts========================');
@@ -700,11 +675,10 @@ describe('test fuctions inside XTokenContract', () => {
         voteTx3.sign([userPriKeyThird]);
         await voteTx3.send();
 
-        
+                console.log('ZkAppAcctInfo: ', (await syncZkAppAcctInfo()));
 
-        console.log('currentSlot0', Blockchain.currentSlot().toString());
-        Blockchain.setGlobalSlot(purchaseEndBlockHeight.add(1));// TODO how to take this into Berkeley Network?
-        console.log('currentSlot1', Blockchain.currentSlot().toString());
+
+        await blockchainHeightToExceed();
 
         let actionHashVote01 = zkApp.actionHashVote.get();
         try {
