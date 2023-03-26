@@ -42,7 +42,8 @@ export class XTokenContract extends SmartContract {
             receive: permissionToEdit,
             setZkappUri: permissionToEdit,
             setTokenSymbol: permissionToEdit,
-            setTiming: Permissions.proofOrSignature()
+            setTiming: Permissions.proofOrSignature(),
+            setVotingFor: Permissions.proofOrSignature(),
         });
 
         this.actionHashVote.set(Reducer.initialActionsHash);
@@ -67,7 +68,7 @@ export class XTokenContract extends SmartContract {
 
         // when reset all, need to reduce to clear actions
         const actionHashVote0 = this.actionHashVote.get();
-        this.actionHashVote.assertNothing();// no need assertEquals
+        this.actionHashVote.assertEquals(actionHashVote0);
         const pendingActions = this.reducer.getActions({ fromActionHash: actionHashVote0 });
         Circuit.log('pendingActions: ', pendingActions);
         let { state: checkRs, actionsHash: newActionHash } = this.reducer.reduce(pendingActions, Bool, (state: Bool, action: VoteNote) => {
@@ -86,22 +87,22 @@ export class XTokenContract extends SmartContract {
         this.SUPPLY.assertEquals(SUPPLY0);
 
         const totalAmountInCirculation0 = this.totalAmountInCirculation.get();
-        this.totalAmountInCirculation.assertNothing();// no need assertEquals, will check it below
+        this.totalAmountInCirculation.assertEquals(totalAmountInCirculation0);
 
         const purchaseEndBlockHeight0 = this.purchaseEndBlockHeight.get();
         this.purchaseEndBlockHeight.assertEquals(purchaseEndBlockHeight0);
 
         const blockchainLength0 = this.network.blockchainLength.get();
-        this.network.blockchainLength.assertNothing();// no need assertEquals, will check it's range below
+        this.network.blockchainLength.assertEquals(blockchainLength0);
 
         // check if admin
         this.address.assertEquals(adminPriKey.toPublicKey());
 
         // check precondition_network.blockHeight
-        blockchainLength0.assertGreaterThan(this.purchaseEndBlockHeight.get(), 'meets precondition_network.blockchainLength');// TODO
+        this.network.blockchainLength.assertBetween(this.purchaseEndBlockHeight.get(), UInt32.MAXINT());
 
         // check if timingLocked Mina
-        SUPPLY0.assertEquals(totalAmountInCirculation0);
+        this.SUPPLY.assertEquals(totalAmountInCirculation0);
 
         // send mina, underlyingly check if current amount is beyond the timing-locking amount.
         this.send({ to, amount });
@@ -113,10 +114,10 @@ export class XTokenContract extends SmartContract {
         const SUPPLY0 = this.SUPPLY.get();
         this.SUPPLY.assertEquals(SUPPLY0);
         const totalAmountInCirculation0 = this.totalAmountInCirculation.get();
-        this.totalAmountInCirculation.assertNothing();// no need assertEquals, just for accumulation
+        this.totalAmountInCirculation.assertEquals(totalAmountInCirculation0);
 
         const memberShipContractAddress0 = this.memberShipContractAddress.get();
-        this.memberShipContractAddress.assertNothing();// no need assertEquals
+        this.memberShipContractAddress.assertEquals(memberShipContractAddress0);
 
         const purchaseStartBlockHeight0 = this.purchaseStartBlockHeight.get();
         this.purchaseStartBlockHeight.assertEquals(purchaseStartBlockHeight0);
@@ -124,20 +125,20 @@ export class XTokenContract extends SmartContract {
         this.purchaseEndBlockHeight.assertEquals(purchaseEndBlockHeight0);
 
         const blockchainLength0 = this.network.blockchainLength.get();
-        this.network.blockchainLength.assertNothing();// no need assertEquals, will check it's range below
+        this.network.blockchainLength.assertEquals(blockchainLength0);
 
         const maximumPurchasingAmount0 = this.maximumPurchasingAmount.get();
         this.maximumPurchasingAmount.assertEquals(maximumPurchasingAmount0);
 
         // no need to check account.balance
-        this.account.balance.assertNothing();
+        this.account.balance.assertEquals(this.account.balance.get());
 
         // check enough
         SUPPLY0.sub(totalAmountInCirculation0).assertGreaterThanOrEqual(purchasingAmount, 'restAmount is enough for purchasingAmount');
 
         // check maximum purchasing amount
         maximumPurchasingAmount0.assertGreaterThanOrEqual(purchasingAmount, 'purchasingAmount is not beyond MaximumPurchasingAmount');
-
+        
         // check precondition_network.blockchainLength
         blockchainLength0.assertGreaterThanOrEqual(purchaseStartBlockHeight0);
         blockchainLength0.assertLessThanOrEqual(purchaseEndBlockHeight0);
@@ -185,13 +186,13 @@ export class XTokenContract extends SmartContract {
      */
     @method voteToProcessRestTokens(voter: PrivateKey, voteOption: UInt64, witness: MerkleMapWitness) {
         const actionHashVote0 = this.actionHashVote.get();
-        this.actionHashVote.assertNothing();// no need assertEquals
+        this.actionHashVote.assertEquals(actionHashVote0);
         const totalAmountInCirculation0 = this.totalAmountInCirculation.get();
-        this.totalAmountInCirculation.assertNothing();// no need assertEquals, will check it blow
+        this.totalAmountInCirculation.assertEquals(totalAmountInCirculation0);
         const SUPPLY0 = this.SUPPLY.get();
         this.SUPPLY.assertEquals(SUPPLY0);
         const memberShipContractAddress0 = this.memberShipContractAddress.get();
-        this.memberShipContractAddress.assertNothing();// no need assertEquals
+        this.memberShipContractAddress.assertEquals(memberShipContractAddress0);
 
         // check if SUPPLY > totalAmountInCirculation
         SUPPLY0.assertGreaterThan(totalAmountInCirculation0);
@@ -222,12 +223,12 @@ export class XTokenContract extends SmartContract {
         const actionHashVote0 = this.actionHashVote.get();
         this.actionHashVote.assertEquals(actionHashVote0);
         const totalAmountInCirculation0 = this.totalAmountInCirculation.get();
-        this.totalAmountInCirculation.assertNothing();// no need assertEquals
+        this.totalAmountInCirculation.assertEquals(totalAmountInCirculation0);
         const SUPPLY0 = this.SUPPLY.get();
         this.SUPPLY.assertEquals(SUPPLY0);
 
         const memberShipContractAddress0 = this.memberShipContractAddress.get();
-        this.memberShipContractAddress.assertNothing();// no need assertEquals
+        this.memberShipContractAddress.assertEquals(memberShipContractAddress0);
 
         const purchaseEndBlockHeight0 = this.purchaseEndBlockHeight.get();
         this.purchaseEndBlockHeight.assertEquals(purchaseEndBlockHeight0);
@@ -237,10 +238,10 @@ export class XTokenContract extends SmartContract {
         membershipContract.memberCount.assertEquals(members);
 
         const blockchainLength0 = this.network.blockchainLength.get();
-        this.network.blockchainLength.assertNothing();// no need assertEquals, will check it's range below
+        this.network.blockchainLength.assertEquals(blockchainLength0);
 
         // check precondition_network.blockHeight
-        blockchainLength0.assertGreaterThan(this.purchaseEndBlockHeight.get(), 'meets precondition_network.blockchainLength');
+        this.network.blockchainLength.assertBetween(this.purchaseEndBlockHeight.get(), UInt32.MAXINT());
 
         const pendingActions = this.reducer.getActions({ fromActionHash: this.actionHashVote.get() });
         Circuit.log('pendingActions: ', pendingActions);
@@ -267,7 +268,7 @@ export class XTokenContract extends SmartContract {
         this.actionHashVote.set(newActionHash);
 
         // meanwhile, timing-lock Mina balance
-        this.account.balance.assertNothing();
+        this.account.balance.assertEquals(this.account.balance.get());
         const initialMinimumBalance0 = this.account.balance.get().div(3).mul(2);
         const cliffTime0 = UInt32.from('2');// TODO
         const cliffAmount0 = UInt64.from(initialMinimumBalance0.div(10));
