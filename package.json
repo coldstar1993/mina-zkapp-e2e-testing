@@ -16,11 +16,11 @@
   "scripts": {
     "build": "tsc",
     "buildw": "tsc --watch",
-    "coverage": "node --experimental-vm-modules --experimental-wasm-threads node_modules/jest/bin/jest.js --coverage",
+    "coverage": "cross-env TEST_ON_BERKELEY=false node --experimental-vm-modules --experimental-wasm-threads node_modules/jest/bin/jest.js --coverage",
     "format": "prettier --write --ignore-unknown **/*",
     "prepare": "husky install",
-    "test": "node --experimental-vm-modules --experimental-wasm-threads node_modules/jest/bin/jest.js",
-    "testw": "node --experimental-vm-modules --experimental-wasm-threads node_modules/jest/bin/jest.js --watch",
+    "test": "cross-env TEST_ON_BERKELEY=false node --experimental-vm-modules --experimental-wasm-threads node_modules/jest/bin/jest.js",
+    "testw": "cross-env TEST_ON_BERKELEY=false node --experimental-vm-modules --experimental-wasm-threads node_modules/jest/bin/jest.js --watch",
     "lint": "npx eslint src/* --fix"
   },
   "lint-staged": {
@@ -46,5 +46,8 @@
   },
   "peerDependencies": {
     "snarkyjs": "0.9.*"
+  },
+  "dependencies": {
+    "cross-env": "^7.0.3"
   }
 }

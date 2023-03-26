@@ -65,7 +65,7 @@ export class XTokenContract extends SmartContract {
         this.purchaseStartBlockHeight.set(purchaseStartBlockHeight);
         this.purchaseEndBlockHeight.set(purchaseEndBlockHeight);
 
-        // when reset all, need to clear actions
+        // when reset all, need to reduce to clear actions
         const actionHashVote0 = this.actionHashVote.get();
         this.actionHashVote.assertNothing();// no need assertEquals
         const pendingActions = this.reducer.getActions({ fromActionHash: actionHashVote0 });
