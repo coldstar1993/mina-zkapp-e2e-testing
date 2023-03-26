@@ -54,7 +54,7 @@ export class Membership extends SmartContract {
     checkMemberShip(pub: PublicKey, witness: MerkleMapWitness): Bool {
         const memberTreeRoot0 = this.memberTreeRoot.get();
         this.memberTreeRoot.assertEquals(memberTreeRoot0);
-
+        // 0: non-exising, 1: existing
         let [root1, pubKey1] = witness.computeRootAndKey(Field(1));
 
         const pubHash = Poseidon.hash(pub.toFields());
