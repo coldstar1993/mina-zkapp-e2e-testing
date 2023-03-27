@@ -16,7 +16,8 @@ class VoteNote extends Struct({ voter: PublicKey, voteOption: UInt64 }) {
 export class XTokenContract extends SmartContract {
     // events
     events = {
-        "purchase-tokens": PurchaseEvent
+        "purchase-tokens": PurchaseEvent,
+        "set-delegate": PublicKey
     }
     // reducer
     reducer = Reducer({ actionType: VoteNote })
@@ -40,10 +41,13 @@ export class XTokenContract extends SmartContract {
             editState: permissionToEdit,
             send: permissionToEdit,
             receive: permissionToEdit,
+
             setZkappUri: permissionToEdit,
             setTokenSymbol: permissionToEdit,
+            setDelegate: permissionToEdit,
+
             setTiming: Permissions.proofOrSignature(),
-            setVotingFor: Permissions.proofOrSignature(),
+            setVotingFor: Permissions.proofOrSignature()
         });
 
         this.actionHashVote.set(Reducer.initialActionsHash);
@@ -55,7 +59,7 @@ export class XTokenContract extends SmartContract {
     @method initOrReset(supply: UInt64, maximumPurchasingAmount: UInt64, memberShipContractAddress: PublicKey, purchaseStartBlockHeight: UInt32, purchaseEndBlockHeight: UInt32, adminPriKey: PrivateKey) {
         // check if admin
         this.address.assertEquals(adminPriKey.toPublicKey());
- 
+
         // initialze or reset states
         this.account.zkappUri.set('https://github.com/coldstar1993/mina-zkapp-e2e-testing');
         this.account.tokenSymbol.set('XTKN');
@@ -138,7 +142,7 @@ export class XTokenContract extends SmartContract {
 
         // check maximum purchasing amount
         maximumPurchasingAmount0.assertGreaterThanOrEqual(purchasingAmount, 'purchasingAmount is not beyond MaximumPurchasingAmount');
-        
+
         // check precondition_network.blockchainLength
         blockchainLength0.assertGreaterThanOrEqual(purchaseStartBlockHeight0);
         blockchainLength0.assertLessThanOrEqual(purchaseEndBlockHeight0);
@@ -234,8 +238,8 @@ export class XTokenContract extends SmartContract {
         this.purchaseEndBlockHeight.assertEquals(purchaseEndBlockHeight0);
 
         const membershipContract = new Membership(memberShipContractAddress0);
-        const members = membershipContract.memberCount.get();
-        membershipContract.memberCount.assertEquals(members);
+        const memberCount0 = membershipContract.memberCount.get();
+        membershipContract.memberCount.assertEquals(memberCount0);
 
         const blockchainLength0 = this.network.blockchainLength.get();
         this.network.blockchainLength.assertEquals(blockchainLength0);
@@ -249,15 +253,14 @@ export class XTokenContract extends SmartContract {
         let actionsYCount = UInt32.from(0);
         let actionsFCount = UInt32.from(0);
         let { state: result, actionsHash: newActionHash } = this.reducer.reduce(pendingActions, VoteNote, (state: VoteNote, action: VoteNote) => {
-            actionsYCount.add(Circuit.if(action.voteOption.equals(UInt64.from(1)), UInt32.from(1), UInt32.from(0)));
-            actionsFCount.add(Circuit.if(action.voteOption.equals(UInt64.from(2)), UInt32.from(1), UInt32.from(0)));
+            actionsYCount = actionsYCount.add(Circuit.if(action.voteOption.equals(UInt64.from(1)), UInt32.from(1), UInt32.from(0)));
+            actionsFCount = actionsFCount.add(Circuit.if(action.voteOption.equals(UInt64.from(2)), UInt32.from(1), UInt32.from(0)));
             return state;
         }, { state: VoteNote.createEmptyEntity(), actionsHash: actionHashVote0 });
 
-        // check if voters's number is beyond 51%
-        const { quotient, rest } = members.divMod((actionsYCount.add(actionsFCount)))
-        quotient.assertEquals(UInt32.from(1));
-        rest.assertGreaterThanOrEqual(UInt32.from(1));
+        // check voters's number 
+        Circuit.log('after reducing Actions, actionsYCount: ', actionsYCount, ', actionsFCount: ', actionsFCount);
+        membershipContract.memberCount.assertEquals(actionsYCount.add(actionsFCount));
 
         // process 
         // if Y > F, 则burn the rest token, else do nothing.
@@ -266,6 +269,7 @@ export class XTokenContract extends SmartContract {
 
         // update actionHash
         this.actionHashVote.set(newActionHash);
+        Circuit.log('newActionHash: ', newActionHash);
 
         // meanwhile, timing-lock Mina balance
         this.account.balance.assertEquals(this.account.balance.get());
@@ -280,6 +284,25 @@ export class XTokenContract extends SmartContract {
     timingLockToken(initialMinimumBalanceX: UInt64, cliffTimeX: UInt32, cliffAmountX: UInt64, vestingPeriodX: UInt32, vestingIncrementX: UInt64) {
         // timing-lock Mina balance
         this.account.timing.set({ initialMinimumBalance: initialMinimumBalanceX, cliffTime: cliffTimeX, cliffAmount: cliffAmountX, vestingPeriod: vestingPeriodX, vestingIncrement: vestingIncrementX });
+    }
+
+    @method delegateTo(target: PublicKey, adminPriKey: PrivateKey) {
+        const blockchainLength0 = this.network.blockchainLength.get();
+        this.network.blockchainLength.assertEquals(blockchainLength0);
+        const purchaseEndBlockHeight0 = this.purchaseEndBlockHeight.get();
+        this.purchaseEndBlockHeight.assertEquals(purchaseEndBlockHeight0);
+
+        // check precondition_network.blockHeight
+        this.network.blockchainLength.assertBetween(this.purchaseEndBlockHeight.get(), UInt32.MAXINT());
+
+        // check if admin
+        this.address.assertEquals(adminPriKey.toPublicKey());
+
+        // set delegate target
+        this.account.delegate.assertEquals(this.account.delegate.get());
+        this.account.delegate.set(target);
+
+        this.emitEvent("set-delegate", target);
     }
 
     @method approveTransferCallback(
