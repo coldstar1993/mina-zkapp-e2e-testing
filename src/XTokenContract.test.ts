@@ -1,6 +1,5 @@
 import { AccountUpdate, Experimental, fetchAccount, fetchLastBlock, Field, isReady, MerkleMap, Mina, Poseidon, PrivateKey, PublicKey, Reducer, shutdown, Signature, Types, UInt32, UInt64 } from 'snarkyjs';
 import { XTokenContract, NormalTokenUser } from './XTokenContract.js';
-import { getProfiler } from "./profiler.js";
 import { Membership } from './Membership.js';
 
 describe('test fuctions inside XTokenContract', () => {
@@ -128,10 +127,8 @@ describe('test fuctions inside XTokenContract', () => {
         if (deployToBerkeley) {
             // wait for Berkeley's blockchainLength > purchaseEndBlockHeight
             while (true) {
-                await syncNetworkStatus();
-
-                let blockchainLength = Mina.activeInstance.getNetworkState().blockchainLength;
-                console.log(`purchaseEndBlockHeight: ${purchaseEndBlockHeight.toString()}, blockchainLength: ${blockchainLength.toString()}`);
+                let blockchainLength = (await syncNetworkStatus()).blockchainLength;
+                console.log(`purchaseEndBlockHeight: ${purchaseEndBlockHeight.toString()}, current blockchainLength: ${blockchainLength.toString()}`);
 
                 if (purchaseEndBlockHeight.lessThan(blockchainLength).toBoolean()) {
                     break;
@@ -141,13 +138,11 @@ describe('test fuctions inside XTokenContract', () => {
                 blockGap = blockGap == 0 ? 1 : blockGap;
                 await new Promise((resolve) => setTimeout(resolve, blockGap * 3 * 60 * 1000));// about 3 minutes/block
             }
+        } else {
+            Blockchain.setBlockchainLength(purchaseEndBlockHeight.add(1));
+            console.log(`purchaseEndBlockHeight: ${purchaseEndBlockHeight.toString()}, current blockchainLength: ${Mina.activeInstance.getNetworkState().blockchainLength.toString()}`);
         }
         console.log('current network state: ', JSON.stringify(Mina.activeInstance.getNetworkState()));
-
-        if (!deployToBerkeley) {
-            Blockchain.setBlockchainLength(purchaseEndBlockHeight.add(1));
-            console.log('after setBlockchainLength(*), current network state: ', JSON.stringify(Mina.activeInstance.getNetworkState()));
-        }
     }
 
     const constructOneUserAndPurchase = async (userPriKey: PrivateKey, purchaseAmount0: UInt64, prePurchaseCallback: any) => {
@@ -177,7 +172,7 @@ describe('test fuctions inside XTokenContract', () => {
             // console.log('constructOneUserAndPurchase_tx: ', tx.toJSON());
             let txId = await tx.send();
             console.log(`purchaseToken's tx[${txId.hash()!}] sent...`);
-            txId.wait({ maxAttempts: 300 });
+            txId.wait({ maxAttempts: 1000 });
             console.log(`purchaseToken's tx confirmed...`);
 
             // store the user
@@ -189,7 +184,7 @@ describe('test fuctions inside XTokenContract', () => {
         await syncAllAccountInfo();
         // fetches all events from deployment
         let events = await zkApp.fetchEvents(purchaseTxConfirmedBlockHeight);
-        console.log(`fetchEvents(${purchaseTxConfirmedBlockHeight.toString()}): `, events);
+        console.log(`fetchEvents(${purchaseTxConfirmedBlockHeight.toString()}): `, JSON.stringify(events));
     }
 
     beforeAll(async () => {
@@ -266,7 +261,7 @@ describe('test fuctions inside XTokenContract', () => {
             });
             let txId_deployMembership = await tx_deployMembership.sign([senderKey]).send();
             console.log(`Membership Contract: deployment tx[${txId_deployMembership.hash()!}] sent...`);
-            await txId_deployMembership.wait({ maxAttempts: 300 });
+            await txId_deployMembership.wait({ maxAttempts: 1000 });
             console.log(`Membership Contract: txId.isSuccess:`, txId_deployMembership.isSuccess);
 
             console.log(`XTokenContract: deploying...`);
@@ -278,7 +273,7 @@ describe('test fuctions inside XTokenContract', () => {
             let txId_deployXTokenContract = await tx_deployXTokenContract.sign([senderKey]).send();
             console.log(`XTokenContract: deployment tx[${txId_deployXTokenContract.hash()!}] sent...`);
 
-            await txId_deployXTokenContract.wait({ maxAttempts: 300 });
+            await txId_deployXTokenContract.wait({ maxAttempts: 1000 });
             console.log(`xTokenContract: txId.isSuccess:`, txId_deployXTokenContract.isSuccess);
         }
 
@@ -314,7 +309,7 @@ describe('test fuctions inside XTokenContract', () => {
         let txId = await tx.sign([senderKey]).send();
         console.log(`trigger xTokenContract.initOrReset(*): tx[${txId.hash()!}] sent...`);
         await txId.wait({
-            maxAttempts: 300,
+            maxAttempts: 1000,
         });
         console.log(`trigger xTokenContract.initOrReset(*): tx confirmed!`);
 
@@ -365,6 +360,8 @@ describe('test fuctions inside XTokenContract', () => {
 
         await syncAllAccountInfo();
 
+            // TODO ！！！由于txId.wait的问题，这里是不是最好等待个5mins?再往下执行？！！！
+    
         console.log('=======================the same user purchases tokens again=======================');
         totalAmountInCirculation0 = zkApp.totalAmountInCirculation.get();
         memberTreeRoot0 = membershipZkApp.memberTreeRoot.get();
@@ -376,11 +373,9 @@ describe('test fuctions inside XTokenContract', () => {
             accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
         });
 
-
             expect(membershipZkApp.memberTreeRoot.get()).toEqual(memberTreeRoot0);// should equal
             expect(membershipZkApp.memberCount.get()).toEqual(memberCount0);
             expect(zkApp.totalAmountInCirculation.get()).toEqual(totalAmountInCirculation0);
-        
     });
 
     /*
@@ -523,7 +518,7 @@ describe('test fuctions inside XTokenContract', () => {
                 zkAppAcctInfo = (await fetchAccount({ publicKey: zkAppAddress })).account!;
                 console.log('current zkAppAcctInfo: ', JSON.stringify(zkAppAcctInfo));
             }
-            expect(zkApp.account.balance).toEqual(currentAcctBalance0);
+            expect(zkApp.account.balance.get()).toEqual(currentAcctBalance0);
     
             console.log('========================try to transfer suitable amounts ========================');
             let transferedAmount1 = currentAcctBalance0.div(3);// to make it suitable
@@ -573,7 +568,7 @@ describe('test fuctions inside XTokenContract', () => {
             } catch (error) {
                 console.error(error);
             }
-            console.log('ZkAppAcctInfo: ', (await syncZkAppAcctInfo()));
+        console.log('ZkAppAcctInfo: ', JSON.stringify(await syncZkAppAcctInfo()));
 
             expect(zkApp.reducer.getActions({ fromActionHash: Reducer.initialActionsHash }).length).toBeGreaterThan(pendingActions0.length);
     
@@ -592,7 +587,7 @@ describe('test fuctions inside XTokenContract', () => {
             } catch (error) {
                 console.error(error);
             }
-            console.log('ZkAppAcctInfo: ', (await syncZkAppAcctInfo()));
+        console.log('ZkAppAcctInfo: ', JSON.stringify(await syncZkAppAcctInfo()));
 
             expect(zkApp.reducer.getActions({ fromActionHash: Reducer.initialActionsHash }).length).toEqual(pendingActions1.length);
         })
@@ -617,7 +612,9 @@ describe('test fuctions inside XTokenContract', () => {
         });
         await voteTx1.prove();
         voteTx1.sign([userPriKeyFirst]);
-        await voteTx1.send();
+        let voteTx1Id=await voteTx1.send();
+        console.log(`[firstUser to vote]'s tx[${voteTx1Id.hash()!}] sent...`);
+        voteTx1Id.wait({ maxAttempts: 1000 });
 
         console.log('========================secUser starts========================');
         let userPriKeySec = PrivateKey.random();
@@ -635,27 +632,9 @@ describe('test fuctions inside XTokenContract', () => {
         });
         await voteTx2.prove();
         voteTx2.sign([userPriKeySec]);
-        await voteTx2.send();
-
-        console.log('========================check rollup can\'t be executed without 51% member\'s votes========================');
-        console.log('ZkAppAcctInfo: ', (await syncZkAppAcctInfo()));
-
-        // check rollup can't be executed without 51% member's votes.
-        let actionHashVote0 = zkApp.actionHashVote.get();
-        try {
-            let tx = await Mina.transaction({sender: senderAccount, fee: transactionFee }, () => {
-                AccountUpdate.fundNewAccount(senderAccount);
-                zkApp.rollupVoteNote();
-            });
-            await tx.prove();
-            tx.sign([senderKey]);
-            await tx.send();
-        } catch (error) {
-            console.error(error);
-        }
-                console.log('ZkAppAcctInfo: ', (await syncZkAppAcctInfo()));
-
-        expect(zkApp.actionHashVote.get()).toEqual(actionHashVote0);
+        let voteTx2Id=await voteTx2.send();
+        console.log(`[secUser to vote]'s tx[${voteTx2Id.hash()!}] sent...`);
+        voteTx2Id.wait({ maxAttempts: 1000 });
 
         console.log('========================thirdUser starts========================');
         let userPriKeyThird = PrivateKey.random();
@@ -664,6 +643,31 @@ describe('test fuctions inside XTokenContract', () => {
             let accUpdt = AccountUpdate.fundNewAccount(senderAccount0, 2);
             accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
         });
+
+        console.log('========================check rollup can\'t be executed without all members\' votes========================');
+        // wait for blockheight grows
+        await blockchainHeightToExceed();
+        
+        console.log('ZkAppAcctInfo: ', JSON.stringify(await syncZkAppAcctInfo()));
+        await syncSenderAcctInfo();
+        
+        let actionHashVote0 = zkApp.actionHashVote.get();
+        try {
+            let tx = await Mina.transaction({ sender: senderAccount, fee: transactionFee }, () => {
+                zkApp.rollupVoteNote();
+            });
+            await tx.prove();
+            tx.sign([senderKey]);
+            await tx.send();
+            let txId=await tx.send();
+            console.log(`[rollupVoteNote when voters' number not meet]'s tx[${txId.hash()!}] sent...`);
+            txId.wait({ maxAttempts: 1000 });
+        } catch (error) {
+            console.error(error);
+        }
+        console.log('ZkAppAcctInfo: ', JSON.stringify(await syncZkAppAcctInfo()));
+        expect(zkApp.actionHashVote.get()).toEqual(actionHashVote0);
+
         console.log('     =================thirdUser votes===================     ');
         let voteTx3 = await Mina.transaction(userPubKeyThird, () => {
             let voter = userPriKeyThird;
@@ -673,22 +677,25 @@ describe('test fuctions inside XTokenContract', () => {
         });
         await voteTx3.prove();
         voteTx3.sign([userPriKeyThird]);
-        await voteTx3.send();
+        let voteTx3Id=await voteTx3.send();
+        console.log(`[thirdUser to vote]'s tx[${voteTx3Id.hash()!}] sent...`);
+        voteTx3Id.wait({ maxAttempts: 1000 });
 
-                console.log('ZkAppAcctInfo: ', (await syncZkAppAcctInfo()));
+        console.log('ZkAppAcctInfo: ', JSON.stringify(await syncZkAppAcctInfo()));
 
-
+        // wait for blockheight grows
         await blockchainHeightToExceed();
 
         let actionHashVote01 = zkApp.actionHashVote.get();
         try {
-            let tx = await Mina.transaction({sender: senderAccount, fee: transactionFee }, () => {
-                AccountUpdate.fundNewAccount(senderAccount);
+            let tx = await Mina.transaction({ sender: senderAccount, fee: transactionFee }, () => {
                 zkApp.rollupVoteNote();
             });
             await tx.prove();
             tx.sign([senderKey]);
-            await tx.send();
+            let txId=await tx.send();
+            console.log(`[rollupVoteNote when voters' number meets]'s tx[${txId.hash()!}] sent...`);
+            txId.wait({ maxAttempts: 1000 });
         } catch (error) {
             console.error(error);
         }
@@ -736,7 +743,7 @@ describe('test fuctions inside XTokenContract', () => {
                 console.log('userPubKey1: ', userPubKey1.toBase58());
     
                 // deploy NormalTokenUser Zkapp
-                let tx0 = await Mina.transaction({sender: senderAccount, fee: transactionFee }, () => {
+                let tx0 = await Mina.transaction({ sender: senderAccount, fee: transactionFee }, () => {
                     AccountUpdate.fundNewAccount(senderAccount, 2);
                     zkApp.deployZkapp(userPubKey, NormalTokenUser._verificationKey!);
                     zkApp.deployZkapp(userPubKey1, NormalTokenUser._verificationKey!);
@@ -783,6 +790,6 @@ describe('test fuctions inside XTokenContract', () => {
                 expect(
                     Mina.getBalance(userPubKey1, tokenId).value.toBigInt()
                 ).toEqual(3n);
-            }) */
-
+            }) 
+        */
 });
