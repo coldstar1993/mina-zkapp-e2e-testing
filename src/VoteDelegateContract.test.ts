@@ -162,8 +162,8 @@ describe('test fuctions inside VoteDelegateContract', () => {
         await syncNetworkStatus();
 
         if (process.env.TEST_ON_BERKELEY! == 'true') {// Berkeley
-            senderKey = PrivateKey.fromBase58('EKEvpZnLn2nMtnpwkfJJ3sLVCKxZFJguBLEhsr4PLrX4Qx7xhgAm');
-            senderAccount = senderKey.toPublicKey();//B62qpBXC73946qhNhZLrc4SRqN6AQB4chEL6b5w4uMkZks9Mrz8YphK
+            senderKey = PrivateKey.fromBase58('EKDmWEWjC6UampzAph9ddAbnmuBgHAfiQhAmSVT6ACJgPFzCsoTW');
+            senderAccount = senderKey.toPublicKey();//EKDmWEWjC6UampzAph9ddAbnmuBgHAfiQhAmSVT6ACJgPFzCsoTW  pubKey:  B62qkvenQ4bZ5qt5QJN8bmEq92KskKH4AZP7pgbMoyiMAccWTWjHRoD
 
             console.log(`Funding fee payer ${senderAccount.toBase58()} and waiting for inclusion in a block..`);
             await Mina.faucet(senderAccount);
@@ -366,23 +366,19 @@ describe('test fuctions inside VoteDelegateContract', () => {
         const nullifierWitness3 = voterNullifierMerkleMap.getWitness(nullifierKey3)
         const tokenMembersWitness3 = tokenMembersMerkleMap.getWitness(Poseidon.hash(userPubKeyThird.toFields()));
 
-        const vote3 = VoteState.applyVote(vote2, Bool(true), userPriKeySec, tokenMembersWitness3, nullifierWitness3);
-        const proof3 = await VoteZkProgram.applyVote(vote3, proof2, Bool(true), userPriKeySec, tokenMembersWitness3, nullifierWitness3);
+        const vote3 = VoteState.applyVote(vote2, Bool(true), userPriKeyThird, tokenMembersWitness3, nullifierWitness3);
+        const proof3 = await VoteZkProgram.applyVote(vote3, proof2, Bool(true), userPriKeyThird, tokenMembersWitness3, nullifierWitness3);
         voterNullifierMerkleMap.set(nullifierKey3, Field(1));
 
-        try {
-            let tx = await Mina.transaction({ sender: senderAccount, fee: transactionFee }, () => {
-                voteDelegateContract.voteDelegateTo(zkAppPrivateKey, proof3);
-            });
-            await tx.prove();
-            tx.sign([senderKey]);
-            await tx.send();
-            let txId = await tx.send();
-            console.log(`[recursively voting]'s tx[${txId.hash()!}] sent...`);
-            txId.wait({ maxAttempts: 1000 });
-        } catch (error) {
-            console.error(error);
-        }
+        let tx = await Mina.transaction({ sender: senderAccount, fee: transactionFee }, () => {
+            voteDelegateContract.voteDelegateTo(zkAppPrivateKey, proof3);
+        });
+        await tx.prove();
+        tx.sign([senderKey]);
+        await tx.send();
+        let txId = await tx.send();
+        console.log(`[recursively voting]'s tx[${txId.hash()!}] sent...`);
+        txId.wait({ maxAttempts: 1000 });
 
         console.log('ZkAppAcctInfo: ', JSON.stringify(await syncAcctInfo(zkAppAddress)));
         expect(zkApp.account.delegate.get()).not.toEqual(delegate0);
