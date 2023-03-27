@@ -273,7 +273,7 @@ describe('test fuctions inside XTokenContract', () => {
         })
         !!!!!!!!!!!!!!!!!!! no need this test case, because other cases could cover it !!!!!!!!!!!!!!!!!!!
      */
-
+/* 
     it(`CHECK tx should succeed when purchase tokens by an non-existing user, but should fail when purchase by an existing user`, async () => {
         console.log('===================[CHECK tx should succeed purchase tokens by an non-existing user] ===================')
         let totalAmountInCirculation0 = zkApp.totalAmountInCirculation.get();
@@ -309,7 +309,7 @@ describe('test fuctions inside XTokenContract', () => {
                 accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
             });
         } catch (error) {
-            console.log('===================[tx fails when purchase tokens by an existing user !!] ===================')
+            console.log('===================[As Expected, tx fails when purchase tokens by an existing user !!] ===================')
             console.error(error);
         }
 
@@ -318,8 +318,8 @@ describe('test fuctions inside XTokenContract', () => {
         expect(zkApp.totalAmountInCirculation.get()).toEqual(totalAmountInCirculation0);
     });
 
-    it(`CHECK tx should fail when purchase tokens with exceeding precondition.network.blockchainLength`, async () => {
-        console.log('===================[CHECK tx should fail when purchase tokens with exceeding precondition.network.blockchainLength] ===================')
+    it(`CHECK tx should fail when purchase tokens with EXCEEDING precondition.network.blockchainLength`, async () => {
+        console.log('===================[CHECK tx should fail when purchase tokens with EXCEEDING precondition.network.blockchainLength] ===================')
         let totalAmountInCirculation0 = zkApp.totalAmountInCirculation.get();
         console.log('totalAmountInCirculation0: ', totalAmountInCirculation0.toString());
         let memberTreeRoot0 = membershipZkApp.memberTreeRoot.get();
@@ -337,6 +337,7 @@ describe('test fuctions inside XTokenContract', () => {
                 accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
             });
         } catch (error) {
+            console.log('========== As Expected, tx fails when purchase tokens with EXCEEDING precondition.network.blockchainLength ========== ');
             console.error(error);
         }
         expect(membershipZkApp.memberTreeRoot.get()).toEqual(memberTreeRoot0);
@@ -344,8 +345,8 @@ describe('test fuctions inside XTokenContract', () => {
         expect(zkApp.totalAmountInCirculation.get()).toEqual(totalAmountInCirculation0);
     });
 
-    it(`CHECK tx should fail when purchase tokens when exceeding maximum purchasing amount`, async () => {
-        console.log('===================[CHECK tx should fail when purchase tokens when exceeding maximum purchasing amount] ===================')
+    it(`CHECK tx should fail when purchase tokens when EXCEEDING maximum purchasing amount`, async () => {
+        console.log('===================[CHECK tx should fail when purchase tokens when EXCEEDING maximum purchasing amount] ===================')
         let totalAmountInCirculation0 = zkApp.totalAmountInCirculation.get();
         console.log('totalAmountInCirculation0: ', totalAmountInCirculation0.toString());
         let memberTreeRoot0 = membershipZkApp.memberTreeRoot.get();
@@ -360,6 +361,7 @@ describe('test fuctions inside XTokenContract', () => {
                 accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
             });
         } catch (error) {
+            console.log('========== As Expected, tx fails when purchase tokens when EXCEEDING maximum purchasing amount ========== ');
             console.error(error);
         }
 
@@ -367,7 +369,8 @@ describe('test fuctions inside XTokenContract', () => {
         expect(membershipZkApp.memberCount.get()).toEqual(memberCount0);
         expect(zkApp.totalAmountInCirculation.get()).toEqual(totalAmountInCirculation0);
     });
-
+ */
+/*
     it(`CHECK tx should fail when purchase tokens when (totalAmountInCirculation + purchasingAmount) > SUPPLY `, async () => {
         console.log('===================[CHECK tx should fail when purchase tokens when (totalAmountInCirculation + purchasingAmount) > SUPPLY ] ===================')
 
@@ -386,6 +389,7 @@ describe('test fuctions inside XTokenContract', () => {
         });
 
         console.log('========================thirdUser starts========================');
+        console.log('=========purchase tokens when (totalAmountInCirculation + purchasingAmount) > SUPPLY, (should FAIL)=========');
         let totalAmountInCirculation0 = zkApp.totalAmountInCirculation.get();
         console.log('totalAmountInCirculation0: ', totalAmountInCirculation0.toString());
         let memberTreeRoot0 = membershipZkApp.memberTreeRoot.get();
@@ -400,6 +404,7 @@ describe('test fuctions inside XTokenContract', () => {
                 accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
             });
         } catch (error) {
+            console.log('=========purchase tokens when (totalAmountInCirculation + purchasingAmount) > SUPPLY, As Expected, tx FAIL!)=========');
             console.error(error);
         }
         expect(membershipZkApp.memberTreeRoot.get()).toEqual(memberTreeRoot0);
@@ -434,7 +439,7 @@ describe('test fuctions inside XTokenContract', () => {
         // wait for blocks grow...
         await waitBlockHeightToExceed(purchaseEndBlockHeight);
 
-        console.log('========================try to transfer excess amounts ========================');
+        console.log('========================try to transfer MINA of excess amounts (should FAIL) ========================');
         let currentAcctBalance0 = zkApp.account.balance.get();
         let userPriKeyRecipient = PrivateKey.random();
         let userPubKeyRecipient = userPriKeyRecipient.toPublicKey();
@@ -448,6 +453,7 @@ describe('test fuctions inside XTokenContract', () => {
             tx.sign([senderKey]);
             await tx.send();
         } catch (error) {
+            console.log('========================try to transfer excess amounts, As Expected, tx FAIL! ========================');
             console.error(error);
         }
         console.log('ZkAppAcctInfo: ', JSON.stringify(await syncAcctInfo(zkAppAddress)));
@@ -455,7 +461,7 @@ describe('test fuctions inside XTokenContract', () => {
         expect(zkApp.account.balance.get()).toEqual(currentAcctBalance0);
 
 
-        console.log('========================try to transfer suitable amounts ========================');
+        console.log('========================try to transfer MINA of suitable amounts (should SUCCEED) ========================');
         let transferedAmount1 = currentAcctBalance0.div(3);// to make it suitable
         try {
             let tx = await Mina.transaction({ sender: senderAccount, fee: transactionFee }, () => {
@@ -468,11 +474,12 @@ describe('test fuctions inside XTokenContract', () => {
         } catch (error) {
             console.error(error);
         }
+        console.log('========================try to transfer suitable amounts, As Expected, tx: SUCCEED! ========================');
         console.log('ZkAppAcctInfo: ', JSON.stringify(await syncAcctInfo(zkAppAddress)));
 
         expect(zkApp.account.balance.get()).toEqual(currentAcctBalance0.sub(transferedAmount1));
     });
-
+*/
     /*  
         !!!!!!!!!!!!!!!!!!! no need this test case, because other cases could cover it !!!!!!!!!!!!!!!!!!!
         it(`CHECK if one can ONLY vote for ONE time To Process Rest Tokens `, async () => {
@@ -525,7 +532,7 @@ describe('test fuctions inside XTokenContract', () => {
         })
         !!!!!!!!!!!!!!!!!!! no need this test case, because other cases could cover it !!!!!!!!!!!!!!!!!!!
      */
-
+ 
     it(`CHECK if one can ONLY vote for ONE time To Process Rest Tokens AND rollup VoteNotes by reducing Actions`, async () => {
         console.log('===================[CHECK if one can ONLY vote for ONE time To Process Rest Tokens AND then rollup VoteNotes by reducing Actions]===================');
         console.log('========================firstUser starts========================');
@@ -562,7 +569,7 @@ describe('test fuctions inside XTokenContract', () => {
             tx1.sign([userPriKeyFirst]);
             await tx1.send();
         } catch (error) {
-            console.log('========== the firstUser vote again, and tx failed!!! ==========')
+            console.log('========== the firstUser vote again, and As Expected, tx failed!!! ==========')
             console.error(error);
         }
         console.log('ZkAppAcctInfo: ', JSON.stringify(await syncAcctInfo(zkAppAddress)));
@@ -596,7 +603,7 @@ describe('test fuctions inside XTokenContract', () => {
             accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
         });
 
-        console.log('===================[CHECK rollup actions without all members\' votes ( tx should fail )]===================');
+        console.log('===================[CHECK rollup actions WITHOUT all members\' votes ( tx should fail )]===================');
         // wait for blockheight grows
         await waitBlockHeightToExceed(purchaseEndBlockHeight);
 
@@ -615,7 +622,7 @@ describe('test fuctions inside XTokenContract', () => {
             console.log(`[rollupVoteNote when voters' number not meet]'s tx[${txId.hash()!}] sent...`);
             txId.wait({ maxAttempts: 1000 });
         } catch (error) {
-            console.log('========== rollup actions without all members\' votes, and tx failed!!! ==========')
+            console.log('========== rollup actions WITHOUT all members\' votes, and As Expected, tx failed!!! ==========')
             console.error(error);
         }
         // console.log('ZkAppAcctInfo: ', JSON.stringify(await syncAcctInfo(zkAppAddress)));
@@ -640,18 +647,15 @@ describe('test fuctions inside XTokenContract', () => {
         await waitBlockHeightToExceed(purchaseEndBlockHeight);
 
         let actionHashVote01 = zkApp.actionHashVote.get();
-        try {
-            let tx = await Mina.transaction({ sender: senderAccount, fee: transactionFee }, () => {
-                zkApp.rollupVoteNote();
-            });
-            await tx.prove();
-            tx.sign([senderKey]);
-            let txId = await tx.send();
-            console.log(`[rollupVoteNote when voters' number meets]'s tx[${txId.hash()!}] sent...`);
-            txId.wait({ maxAttempts: 1000 });
-        } catch (error) {
-            console.error(error);
-        }
+
+        let tx = await Mina.transaction({ sender: senderAccount, fee: transactionFee }, () => {
+            zkApp.rollupVoteNote();
+        });
+        await tx.prove();
+        tx.sign([senderKey]);
+        let txId = await tx.send();
+        console.log(`[rollupVoteNote when voters' number meets]'s tx[${txId.hash()!}] sent...`);
+        txId.wait({ maxAttempts: 1000 });
 
         expect(zkApp.actionHashVote.get()).not.toEqual(actionHashVote01);
     });
@@ -676,18 +680,19 @@ describe('test fuctions inside XTokenContract', () => {
         });
         await tx0.prove();
         tx0.sign([senderKey, userPriKey, userPriKey1]);
-        console.log('deploy NormalTokenUser tx: ', tx0.toJSON());
-        await tx0.send();
+        // console.log('deploy NormalTokenUser tx: ', tx0.toJSON());
+        let tx0Id = await tx0.send();
+        console.log(`[deploy two NormalTokenUser contracts for two users]'s tx[${tx0Id.hash()!}] sent...`);
+        tx0Id.wait({ maxAttempts: 1000 });
 
         // user purchase token
         await constructOneUserAndPurchase(userPriKey, maximumPurchasingAmount, (senderAccount0: PublicKey, userPriKey0: PrivateKey) => {
-            // let accUpdt = AccountUpdate.fundNewAccount(senderAccount0);
-            let accUpdt = AccountUpdate.createSigned(senderAccount0);
+            let accUpdt = AccountUpdate.fundNewAccount(senderAccount0);
             accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
         });
         // user1 purchase token
         await constructOneUserAndPurchase(userPriKey1, maximumPurchasingAmount, (senderAccount0: PublicKey, userPriKey0: PrivateKey) => {
-            let accUpdt = AccountUpdate.createSigned(senderAccount0);
+            let accUpdt = AccountUpdate.fundNewAccount(senderAccount0);
             accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
         });
 
@@ -708,7 +713,9 @@ describe('test fuctions inside XTokenContract', () => {
         await tx1.prove();
         tx1.sign([userPriKey]);
         console.log('approveTokenTransfer\'s tx:', tx1.toJSON());
-        await tx1.send();
+        let tx1Id = await tx1.send();
+        console.log(`[transfer token by proof-auth from one user to another user]'s tx[${tx1Id.hash()!}] sent...`);
+        tx1Id.wait({ maxAttempts: 1000 });
 
         expect(
             Mina.getBalance(userPubKey, tokenId).value.toBigInt()

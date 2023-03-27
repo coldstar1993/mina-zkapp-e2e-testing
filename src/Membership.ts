@@ -28,16 +28,13 @@ export class Membership extends SmartContract {
         // check if admin
         this.address.assertEquals(admin.toPublicKey());
 
-        this.memberTreeRoot.assertNothing();// no need assertEquals
-        this.memberCount.assertNothing();// no need assertEquals
-
         this.memberTreeRoot.set(memberTreeRoot);
         this.memberCount.set(memberCount);
     }
 
     @method addNewMember(member: PublicKey, witness: MerkleMapWitness) {
         const memberCount0 = this.memberCount.get();
-        this.memberCount.assertNothing();// no need assertEquals
+        this.memberCount.assertEquals(memberCount0);
 
         // check non-existence
         const checkRs = this.checkMemberShip(member, witness);
@@ -65,5 +62,12 @@ export class Membership extends SmartContract {
 
     @method assertMemberShip(pub: PublicKey, witness: MerkleMapWitness) {
         this.checkMemberShip(pub, witness).assertTrue();
+    }
+    
+    @method assertEqualsMemberCount(memberCnt: UInt32) {
+        const memberCount0 = this.memberCount.get();
+        this.memberCount.assertEquals(memberCount0);
+
+        memberCount0.assertEquals(memberCnt);
     }
 }

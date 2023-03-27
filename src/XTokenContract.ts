@@ -237,10 +237,6 @@ export class XTokenContract extends SmartContract {
         const purchaseEndBlockHeight0 = this.purchaseEndBlockHeight.get();
         this.purchaseEndBlockHeight.assertEquals(purchaseEndBlockHeight0);
 
-        const membershipContract = new Membership(memberShipContractAddress0);
-        const memberCount0 = membershipContract.memberCount.get();
-        membershipContract.memberCount.assertEquals(memberCount0);
-
         const blockchainLength0 = this.network.blockchainLength.get();
         this.network.blockchainLength.assertEquals(blockchainLength0);
 
@@ -260,7 +256,8 @@ export class XTokenContract extends SmartContract {
 
         // check voters's number 
         Circuit.log('after reducing Actions, actionsYCount: ', actionsYCount, ', actionsFCount: ', actionsFCount);
-        membershipContract.memberCount.assertEquals(actionsYCount.add(actionsFCount));
+        const membershipContract = new Membership(memberShipContractAddress0);
+        membershipContract.assertEqualsMemberCount(actionsYCount.add(actionsFCount));
 
         // process 
         // if Y > F, 则burn the rest token, else do nothing.
