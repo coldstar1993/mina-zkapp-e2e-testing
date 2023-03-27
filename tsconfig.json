@@ -19,5 +19,5 @@
     "noFallthroughCasesInSwitch": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": ["src/XTokenContract.test.ts", "src/token0.test0.ts", "src/hello_world.ts", "src/run_berkeley.ts"]
+  "include": ["src"], ///XTokenContract.test.ts, "src/VoteDelegateContract.ts", "src/VoteDelegateContract.test.ts", "src/token0.test0.ts", "src/hello_world.ts", "src/run_berkeley.ts", "src/vote0.ts
 }
