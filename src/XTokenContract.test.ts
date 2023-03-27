@@ -3,7 +3,6 @@ import { XTokenContract, NormalTokenUser } from './XTokenContract.js';
 import { Membership } from './Membership.js';
 
 describe('test fuctions inside XTokenContract', () => {
-    let deployToBerkeley = process.env.TEST_ON_BERKELEY! == 'true' ? true : false;
     let needDeployContractEachTime = true;
 
     let Blockchain: any;
@@ -36,7 +35,7 @@ describe('test fuctions inside XTokenContract', () => {
 
 
     async function syncNetworkStatus() {
-        if (deployToBerkeley) {
+        if (process.env.TEST_ON_BERKELEY! == 'true') {
             await fetchLastBlock();
             console.log('sync Berkeley Network status: done!');
         }
@@ -46,7 +45,7 @@ describe('test fuctions inside XTokenContract', () => {
 
     async function syncAcctInfo(acctAddr: PublicKey) {
         let acctInfo: Types.Account | undefined;
-        if (deployToBerkeley) {
+        if (process.env.TEST_ON_BERKELEY! == 'true') {
             acctInfo = (await fetchAccount({ publicKey: acctAddr })).account!;
         } else {
             acctInfo = Mina.activeInstance.getAccount(acctAddr);
@@ -62,7 +61,7 @@ describe('test fuctions inside XTokenContract', () => {
     }
 
     async function waitBlockHeightToExceed(aHeight: UInt32) {
-        if (deployToBerkeley) {
+        if (process.env.TEST_ON_BERKELEY! == 'true') {
             // wait for Berkeley's blockchainLength > aHeight
             while (true) {
                 let blockchainLength = (await syncNetworkStatus()).blockchainLength;
@@ -114,9 +113,6 @@ describe('test fuctions inside XTokenContract', () => {
         tokenMembersMerkleMap.set(indx, Field(1));
 
         await syncAllAccountInfo();
-        // fetches all events from deployment
-        let events = await zkApp.fetchEvents(beforePurchaseTxBlockHeight);
-        console.log(`fetchEvents(${beforePurchaseTxBlockHeight.toString()}): `, JSON.stringify(events));
     }
 
     beforeAll(async () => {
@@ -127,7 +123,7 @@ describe('test fuctions inside XTokenContract', () => {
         let tmp0 = PrivateKey.random();
         console.log('sample - XTokenContract\'s privateKey: ', tmp0.toBase58(), 'pubKey: ', tmp0.toPublicKey().toBase58());
 
-        Blockchain = deployToBerkeley ? Mina.Network({
+        Blockchain = process.env.TEST_ON_BERKELEY! == 'true' ? Mina.Network({
             mina: 'https://proxy.berkeley.minaexplorer.com/graphql',
             archive: 'https://archive.berkeley.minaexplorer.com/',
         }) : Mina.LocalBlockchain({ proofsEnabled: true });
@@ -150,7 +146,7 @@ describe('test fuctions inside XTokenContract', () => {
     beforeEach(async () => {
         await syncNetworkStatus();
 
-        if (deployToBerkeley) {// Berkeley
+        if (process.env.TEST_ON_BERKELEY! == 'true') {// Berkeley
             senderKey = PrivateKey.fromBase58('EKEvpZnLn2nMtnpwkfJJ3sLVCKxZFJguBLEhsr4PLrX4Qx7xhgAm');
             senderAccount = senderKey.toPublicKey();//B62qpBXC73946qhNhZLrc4SRqN6AQB4chEL6b5w4uMkZks9Mrz8YphK
 
@@ -216,7 +212,9 @@ describe('test fuctions inside XTokenContract', () => {
 
         // initialize or reset XTokenContract & MembershipZkApp
         await syncNetworkStatus();
-        console.log(`trigger xTokenContract.initOrReset(*) to initialize...`);
+        // initialize or reset XTokenContract & MembershipZkApp
+
+        console.log(`trigger all contracts to initialize...`);
         console.log(`
             tokenSupply: ${tokenSupply.toString()},\n
             maximumPurchasingAmount: ${maximumPurchasingAmount.toString()},\n
