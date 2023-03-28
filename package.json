@@ -19,7 +19,7 @@
     "coverage": "cross-env TEST_ON_BERKELEY=false node --experimental-vm-modules --experimental-wasm-threads node_modules/jest/bin/jest.js --coverage",
     "format": "prettier --write --ignore-unknown **/*",
     "prepare": "husky install",
-    "test": "cross-env TEST_ON_BERKELEY=false node --experimental-vm-modules --experimental-wasm-threads node_modules/jest/bin/jest.js",
+    "test": "cross-env TEST_ON_BERKELEY=true node --experimental-vm-modules --experimental-wasm-threads node_modules/jest/bin/jest.js",
     "testw": "cross-env TEST_ON_BERKELEY=false node --experimental-vm-modules --experimental-wasm-threads node_modules/jest/bin/jest.js --watch",
     "lint": "npx eslint src/* --fix"
   },

@@ -32,7 +32,7 @@ export class Membership extends SmartContract {
         this.memberCount.set(memberCount);
     }
 
-    @method addNewMember(member: PublicKey, witness: MerkleMapWitness) {
+    @method addNewMember(member: PublicKey, witness: MerkleMapWitness) {// TODO need check auth
         const memberCount0 = this.memberCount.get();
         this.memberCount.assertEquals(memberCount0);
 
