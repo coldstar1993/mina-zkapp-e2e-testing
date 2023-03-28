@@ -1,8 +1,9 @@
-import { AccountUpdate, Bool, Experimental, fetchAccount, fetchLastBlock, Field, isReady, MerkleMap, Mina, Poseidon, PrivateKey, PublicKey, Reducer, shutdown, Signature, Types, UInt32, UInt64 } from 'snarkyjs';
-import { XTokenContract, NormalTokenUser } from './XTokenContract.js';
+import { AccountUpdate, Bool, fetchAccount, fetchLastBlock, Field, isReady, MerkleMap, Mina, Poseidon, PrivateKey, PublicKey, shutdown, Types, UInt32, UInt64 } from 'snarkyjs';
+import { XTokenContract } from './XTokenContract.js';
 import { Membership } from './Membership.js';
-import { VoteProof, VoteZkProgram, VoteState } from "./vote.js";
+import { VoteZkProgram, VoteState } from "./vote.js";
 import { VoteDelegateContract } from './VoteDelegateContract.js';
+import { loopUntilAccountExists, makeAndSendTransaction } from './utils.js';
 
 describe('test fuctions inside VoteDelegateContract', () => {
     let needDeployContractEachTime = true;
@@ -107,19 +108,25 @@ describe('test fuctions inside VoteDelegateContract', () => {
 
         // construct a tx and send
         console.log(`user purchase Tokens...`);
-        let tx = await Mina.transaction({ sender: senderAccount, fee: transactionFee }, () => {
-            prePurchaseCallback(senderAccount, userPriKey);
-            zkApp.purchaseToken(userPubKey, purchaseAmount0, userMerkleMapWitness);
+
+        await makeAndSendTransaction({
+            feePayerPublicKey: senderKey.toPublicKey(),
+            zkAppAddress,
+            mutateZkApp() {
+                prePurchaseCallback(senderAccount, userPriKey);
+                zkApp.purchaseToken(userPubKey, purchaseAmount0, userMerkleMapWitness);
+            },
+            transactionFee,
+            signTx(tx: Mina.Transaction) {
+                tx.sign([senderKey, userPriKey]);
+            },
+            getState() {
+                return zkApp.totalAmountInCirculation.get();
+            },
+            statesEqual(state1, state2) {
+                return state2.equals(state1).toBoolean();
+            },
         });
-
-        await tx.prove();
-        tx.sign([senderKey, userPriKey]);
-        // console.log('constructOneUserAndPurchase_tx: ', tx.toJSON());
-        let txId = await tx.send();
-        console.log(`purchaseToken's tx[${txId.hash()!}] sent...`);
-        txId.wait({ maxAttempts: 1000 });
-        console.log(`purchaseToken's tx confirmed...`);
-
         // store the user
         tokenMembersMerkleMap.set(indx, Field(1));
 
@@ -166,8 +173,13 @@ describe('test fuctions inside VoteDelegateContract', () => {
             senderAccount = senderKey.toPublicKey();//EKDmWEWjC6UampzAph9ddAbnmuBgHAfiQhAmSVT6ACJgPFzCsoTW  pubKey:  B62qkvenQ4bZ5qt5QJN8bmEq92KskKH4AZP7pgbMoyiMAccWTWjHRoD
 
             console.log(`Funding fee payer ${senderAccount.toBase58()} and waiting for inclusion in a block..`);
-            await Mina.faucet(senderAccount);
-            await fetchAccount({ publicKey: senderAccount });
+            // await Mina.faucet(senderAccount);
+            await loopUntilAccountExists({
+                address: senderAccount,
+                eachTimeNotExist: () => { console.log('[loopUntilAccountExists] senderAccount is still not exiting, loop&wait...'); },
+                isZkAppAccount: false,
+                isLocalBlockChain: false
+            });
             console.log('senderAccount is funded!');
 
         } else {// Local
