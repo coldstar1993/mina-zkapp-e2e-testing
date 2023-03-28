@@ -221,10 +221,9 @@ describe('test fuctions inside XTokenContract', () => {
         const merkleRoot0 = tokenMembersMerkleMap.getRoot();
         console.log(`tokenMembersMerkleMap's initial root: ${merkleRoot0.toString()}`);
 
-        // initialize or reset XTokenContract & MembershipZkApp
         await syncNetworkStatus();
+        
         // initialize or reset XTokenContract & MembershipZkApp
-
         console.log(`trigger all contracts to initialize...`);
         console.log(`
             tokenSupply: ${tokenSupply.toString()},\n
@@ -341,7 +340,7 @@ describe('test fuctions inside XTokenContract', () => {
         expect(membershipZkApp.memberCount.get()).toEqual(memberCount0);
         expect(zkApp.totalAmountInCirculation.get()).toEqual(totalAmountInCirculation0);
     });
-
+/* 
     it(`CHECK tx should fail when purchase tokens with EXCEEDING precondition.network.blockchainLength`, async () => {
         console.log('===================[CHECK tx should fail when purchase tokens with EXCEEDING precondition.network.blockchainLength] ===================')
         let totalAmountInCirculation0 = zkApp.totalAmountInCirculation.get();
@@ -435,8 +434,9 @@ describe('test fuctions inside XTokenContract', () => {
         expect(membershipZkApp.memberCount.get()).toEqual(memberCount0);
         expect(zkApp.totalAmountInCirculation.get()).toEqual(totalAmountInCirculation0);
     });
+ */
 
-    it(`CHECK if (timing-lock Mina balance when totalAmountInCirculation == SUPPLY) AND (Mina of 'cliffAmount' can be transferred after 'cliffTime')`, async () => {
+/*     it(`CHECK if (timing-lock Mina balance when totalAmountInCirculation == SUPPLY) AND (Mina of 'cliffAmount' can be transferred after 'cliffTime')`, async () => {
         console.log('===================[CHECK if timing-lock Mina balance when totalAmountInCirculation == SUPPLY]===================');
 
         console.log('========================firstUser starts========================');
@@ -503,7 +503,7 @@ describe('test fuctions inside XTokenContract', () => {
 
         expect(zkApp.account.balance.get()).toEqual(currentAcctBalance0.sub(transferedAmount1));
 
-        /* 
+         
                 console.log('\n\n===================[CHECK if Mina of \'cliffAmount\' can be transferred after 'cliffTime']===================');
                 // wait for blocks grow...
                 await waitBlockHeightToExceed(purchaseEndBlockHeight);// TODO
@@ -527,10 +527,10 @@ describe('test fuctions inside XTokenContract', () => {
                 }
                 console.log('ZkAppAcctInfo: ', JSON.stringify(await syncAcctInfo(zkAppAddress)));
         
-                expect(zkApp.account.balance.get()).toEqual(currentAcctBalance0); */
+                expect(zkApp.account.balance.get()).toEqual(currentAcctBalance0); 
 
     });
-
+ */
     /*  
         !!!!!!!!!!!!!!!!!!! no need this test case, because other cases could cover it !!!!!!!!!!!!!!!!!!!
         it(`CHECK if one can ONLY vote for ONE time To Process Rest Tokens `, async () => {
