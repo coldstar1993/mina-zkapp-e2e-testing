@@ -94,6 +94,14 @@ describe('test fuctions inside Membership', () => {
         await txId_deployMembership.wait({ maxAttempts: 1000 });
         console.log(`Membership Contract: txId.isSuccess:`, txId_deployMembership.isSuccess);
 
+        // loop to wait for membership contract to deploy done!
+        await loopUntilAccountExists({
+            address: zkAppAddress, eachTimeNotExist() {
+                console.log('loop&wait for membership contract to deploy...');
+            }, isZkAppAccount: true, isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
+        });
+        console.log(`Membership Contract: deployment done!`);
+
         membershipMerkleMap = new MerkleMap();
         const merkleRoot0 = membershipMerkleMap.getRoot();
         console.log(`membershipMerkleMap's initial root: ${merkleRoot0.toString()}`);
@@ -132,8 +140,7 @@ describe('test fuctions inside Membership', () => {
         });
         // store the user
         membershipMerkleMap.set(indx, Field(1));
-        expect(zkApp.memberTreeRoot).toEqual(membershipMerkleMap.getRoot());
-
+        expect(zkApp.memberTreeRoot.get()).toEqual(membershipMerkleMap.getRoot());
         console.log('===================As Expected, tx succeed when store an non-existing user===================');
 
 
@@ -165,6 +172,6 @@ describe('test fuctions inside Membership', () => {
             console.error(error);
         }
         // store the user
-        expect(zkApp.memberTreeRoot).toEqual(merkleRoot0);
+        expect(zkApp.memberTreeRoot.get()).toEqual(merkleRoot0);
     });
 });

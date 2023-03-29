@@ -228,7 +228,7 @@ describe('test fuctions inside VoteDelegateContract', () => {
             console.log(`Membership Contract: txId.isSuccess:`, txId_deployMembership.isSuccess);
 
             // loop to wait for membership contract to deploy done!
-            loopUntilAccountExists({
+            await loopUntilAccountExists({
                 address: membershipZkAppAddress, eachTimeNotExist() {
                     console.log('loop&wait for membership contract to deploy...');
                 }, isZkAppAccount: true, isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
@@ -247,7 +247,7 @@ describe('test fuctions inside VoteDelegateContract', () => {
             console.log(`xTokenContract: txId.isSuccess:`, txId_deployXTokenContract.isSuccess);
 
             // loop to wait for XTokenContract contract to deploy done!
-            loopUntilAccountExists({
+            await loopUntilAccountExists({
                 address: zkAppAddress, eachTimeNotExist() {
                     console.log('loop&wait for XTokenContract to deploy...');
                 }, isZkAppAccount: true, isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
@@ -266,7 +266,7 @@ describe('test fuctions inside VoteDelegateContract', () => {
             console.log(`voteDelegateContract: txId.isSuccess:`, txId_deployVoteDelegateContract.isSuccess);
 
             // loop to wait for VoteDelegateContract to deploy done!
-            loopUntilAccountExists({
+            await loopUntilAccountExists({
                 address: voteDelegateContractAddress, eachTimeNotExist() {
                     console.log('loop&wait for VoteDelegateContract to deploy...');
                 }, isZkAppAccount: true, isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
