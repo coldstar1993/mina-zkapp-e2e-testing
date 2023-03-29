@@ -1,0 +1,28 @@
+
+Reducer.initialActionsHash.toString():  12935064460869035604753254773225484359407575580289870070671311469994328713165
+    sender's privateKey:  EKEBXLAf49e34xRzwpgmAG9izrpREpVPqSyW4ARJSajy6RVEH9ut pubKey:  B62qmxXCokrukzUL7wY4tvZHHTEccr33djEYxsVbMqWRiWBmLx6xCbM
+
+    sender's privateKey:  EKDzH5KiqhieR9u4mhChjkcgGYigZR9oAjDYg4nPLF51xYRizWUN pubKey:  B62qmHoP6udwEZxo5Q5wTSyZkHZn2AbiHjTG5gjbTRGgoKrAaphhDZK
+
+    sender's privateKey:  EKES8JCycxtwX6xpcZrbR88tnL435vUKfLSZNnjbrD911TaXdnPq pubKey:  B62qqj9q9nFXMy2ALbZtTYCX19j4X523rMGhWwrtjZbweq5eSvBRNSv
+    
+    sender's privateKey:  EKEde6QgkRQZLKazUAWnv7aNTh4KQgDk7RyMjscPwa96bxbVMN36 pubKey:  B62qom8mTj7UFpByWkP7UNxgeSPZviHbZRGMN5jGyckUY99SFBSLg71
+    
+    - sender's privateKey:  EKFYsKLtugSjmSTVtPy5MJ5dgYY4x3JVRASEoJpw5hekcFkZtiin pubKey:  B62qkGVrNA1WmPTBuwHEmY7B7dcSb1Ys4eiacqPLCmYurZbe2uFEWoW
+    
+- sender's privateKey:  EKEG5erbvMjiFkMbzvfiTeq5JPv9AXuZrJ6cM9ksm6u4QuCrpStF pubKey:  B62qrGHY712Y9Rg5u25D6sF2swgjka7tmhw7fEw5gJrcHdLAkyH6wyw
+
+
+-sender's privateKey:  EKDmWEWjC6UampzAph9ddAbnmuBgHAfiQhAmSVT6ACJgPFzCsoTW  pubKey:  B62qkvenQ4bZ5qt5QJN8bmEq92KskKH4AZP7pgbMoyiMAccWTWjHRoD
+
+-sender's privateKey:  EKE4pXwzokMAMos8JLzZgs51zcTccbwBHSoWKJon9paYKC7GqT9a  pubKey:  B62qou6LbyAh2PbestqdQE3PMPL57ct4eQ6hSNT15CpTgTz5YHhy9ad
+
+-sender private key: EKEvpZnLn2nMtnpwkfJJ3sLVCKxZFJguBLEhsr4PLrX4Qx7xhgAm    public key: B62qpBXC73946qhNhZLrc4SRqN6AQB4chEL6b5w4uMkZks9Mrz8YphK
+
+-sender private key0: EKEYaNo9HxkMpNrjuAYCXug42TJnij36MkEnDsx58TfF3cFNff3n   public key0: B62qk1UHVMMQ28U54vayJuXxLo9wd8vo5vEMNoLuK3haFN8kziKcAiX
+
+-senderKey: EKEEBkoXHsUQke7BzjgYXEwVbgP4Eep7Xgb3FNbnodQdiMpTnayQ,  senderAccount: B62qjbaHXVVNYD2GrRUWqveo5BSt9k7p7ySMj7q354L6WqgK5qoMKqQ
+
+sample - XTokenContract's privateKey:  EKEHu59a3GUam6rhuVUaA5wXeunJ1mmxgPVZABCj3ix1hVaXgJZK pubKey:  B62qpnMzvx87c8QFh8wNHVKizwunyoKwHaA44CibxEob9gJZsexPuPr
+
+sample - Membership's privateKey:  EKFRWWuziCMDCoTqzhsaYBeRPDt2tKbPEYwCLgecfsYgUPnaJfji pubKey:  B62qrBB4Fpkv7vpU9QoQX9YTqB99whpE47CSsLqUB4q1xTxnUjxs965
