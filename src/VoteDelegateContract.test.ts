@@ -41,11 +41,6 @@ describe('test fuctions inside VoteDelegateContract', () => {
     let newDelegateTargetKey: PrivateKey;
     let newDelegateTargetAddress: PublicKey;
 
-    let voteDelegateContractAcctInfo: Types.Account | undefined;
-    let membershipAcctInfo: Types.Account | undefined;
-    let zkAppAcctInfo: Types.Account | undefined;
-
-
     async function syncNetworkStatus() {
         if (process.env.TEST_ON_BERKELEY! == 'true') {
             await fetchLastBlock();
@@ -70,6 +65,7 @@ describe('test fuctions inside VoteDelegateContract', () => {
         console.log('current senderAcctInfo: ', JSON.stringify(await syncAcctInfo(senderAccount)));
         console.log('current membershipAcctInfo: ', JSON.stringify(await syncAcctInfo(membershipZkAppAddress)));
         console.log('current zkAppAcctInfo: ', JSON.stringify(await syncAcctInfo(zkAppAddress)));
+        console.log('current voteDelegateContractAcctInfo: ', JSON.stringify(await syncAcctInfo(voteDelegateContractAddress)));
     }
 
     async function waitBlockHeightToExceed(aHeight: UInt32) {
@@ -95,7 +91,6 @@ describe('test fuctions inside VoteDelegateContract', () => {
     }
 
     const constructOneUserAndPurchase = async (userPriKey: PrivateKey, purchaseAmount0: UInt64, prePurchaseCallback: any) => {
-        let beforePurchaseTxBlockHeight = (await syncNetworkStatus()).blockchainLength;
         await syncAllAccountInfo();
 
         let userPubKey = userPriKey.toPublicKey();
@@ -125,7 +120,7 @@ describe('test fuctions inside VoteDelegateContract', () => {
             },
             statesEqual(state1, state2) {
                 return state2.equals(state1).toBoolean();
-            },            
+            },
             isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
 
         });
@@ -304,32 +299,45 @@ describe('test fuctions inside VoteDelegateContract', () => {
             membershipZkAppAddress: ${membershipZkAppAddress.toBase58()},\n
             newDelegateTargetAddress: ${newDelegateTargetAddress.toBase58()}\n
         `);
-        const tx = await Mina.transaction({ sender: senderAccount, fee: transactionFee }, () => {
-            zkApp.initOrReset(
-                tokenSupply,
-                maximumPurchasingAmount,
-                membershipZkAppAddress,
-                purchaseStartBlockHeight,
-                purchaseEndBlockHeight,
-                zkAppPrivateKey
-            );
-            membershipZkApp.initOrReset(new MerkleMap().getRoot(), UInt32.from(0), membershipZkAppPrivateKey);
 
-            voteDelegateContract.initOrReset(zkAppAddress, membershipZkAppAddress, new MerkleMap().getRoot(), newDelegateTargetAddress, voteDelegateContractPrivateKey);
+        await makeAndSendTransaction({
+            feePayerPublicKey: senderKey.toPublicKey(),
+            zkAppAddress,
+            mutateZkApp() {
+                zkApp.initOrReset(
+                    tokenSupply,
+                    maximumPurchasingAmount,
+                    membershipZkAppAddress,
+                    purchaseStartBlockHeight,
+                    purchaseEndBlockHeight,
+                    zkAppPrivateKey
+                );
+                membershipZkApp.initOrReset(new MerkleMap().getRoot(), UInt32.from(0), membershipZkAppPrivateKey);
+
+                voteDelegateContract.initOrReset(zkAppAddress, membershipZkAppAddress, new MerkleMap().getRoot(), newDelegateTargetAddress, voteDelegateContractPrivateKey);
+
+            },
+            transactionFee,
+            signTx(tx: Mina.Transaction) {
+                tx.sign([senderKey]);
+            },
+            getState() {
+                return (Blockchain.getAccount(zkAppAddress).tokenSymbol) as string;
+            },
+            statesEqual(state1, state2) {
+                console.log('state1: ', state1, '  state2: ', state2);
+                return state2 == state1;
+            },
+            isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
         });
-        await tx.prove();
-        let txId = await tx.sign([senderKey]).send();
-        console.log(`trigger xTokenContract.initOrReset(*): tx[${txId.hash()!}] sent...`);
-        await txId.wait({
-            maxAttempts: 1000,
-        });
+
         // fetch events to confirm
-        let events = await zkApp.fetchEvents(purchaseStartBlockHeight);
+        let events = await voteDelegateContract.fetchEvents(purchaseStartBlockHeight);
         console.log(`fetchEvents(${purchaseStartBlockHeight.toString()}): `, JSON.stringify(events));
         expect(events.filter((e) => {
             return e.type == 'init-delegate-target'
         })[0].event).toEqual(newDelegateTargetAddress);
-        console.log(`trigger xTokenContract.initOrReset(*): tx confirmed!`);
+        console.log(`trigger voteDelegateContract.initOrReset(*): tx confirmed!`);
 
         await syncAllAccountInfo();
 
