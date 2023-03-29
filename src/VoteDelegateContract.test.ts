@@ -125,7 +125,9 @@ describe('test fuctions inside VoteDelegateContract', () => {
             },
             statesEqual(state1, state2) {
                 return state2.equals(state1).toBoolean();
-            },
+            },            
+            isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
+
         });
         // store the user
         tokenMembersMerkleMap.set(indx, Field(1));
@@ -425,6 +427,8 @@ describe('test fuctions inside VoteDelegateContract', () => {
                 console.log('state1: ', state1, '  state2: ', state2);
                 return state2.equals(state1).toBoolean();
             },
+            isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
+
         });
 
         console.log('ZkAppAcctInfo: ', JSON.stringify(await syncAcctInfo(zkAppAddress)));

@@ -136,7 +136,9 @@ describe('test fuctions inside Membership', () => {
             },
             statesEqual(state1, state2) {
                 return state2.equals(state1).toBoolean();
-            },
+            },            
+            isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
+
         });
         // store the user
         membershipMerkleMap.set(indx, Field(1));
@@ -165,7 +167,9 @@ describe('test fuctions inside Membership', () => {
                 },
                 statesEqual(state1, state2) {
                     return state2.equals(state1).toBoolean();
-                },
+                },            
+                isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
+
             });
         } catch (error) {
             console.log('===================As Expected, tx fails when store an existing user===================');
