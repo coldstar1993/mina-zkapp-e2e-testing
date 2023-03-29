@@ -43,8 +43,9 @@ export const loopUntilAccountExists = async (
 ) => {
   for (; ;) {
     let { accountExists, account } = await checkAccountExists(address, isLocalBlockChain);
+    console.log(`[checkAccountExists]: ${accountExists}, account: ${JSON.stringify(account)}`);
     if (accountExists && isZkAppAccount) {
-      accountExists = accountExists && (account as any)?.appState != null;
+      accountExists = accountExists && (account as any)?.zkapp.appState != null;
     }
     if (!accountExists) {
       await eachTimeNotExist();
