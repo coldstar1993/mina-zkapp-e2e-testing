@@ -49,7 +49,7 @@ export const loopUntilAccountExists = async (
     }
     if (!accountExists) {
       await eachTimeNotExist();
-      await new Promise((resolve) => setTimeout(resolve, 30 * 1000));
+      await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
     } else {
       // TODO add optional check that verification key is correct once this is available in SnarkyJS
       return account!;
@@ -88,7 +88,7 @@ export const makeAndSendTransaction = async <State extends ToString>({
   // Why this line? It increments internal feePayer account variables, such as
   // nonce, necessary for successfully sending a transaction
   await syncAcctInfo(zkAppAddress, isLocalBlockChain);
-  const initialState = getState();
+  const initialState = await getState();
 
   let transaction = await Mina.transaction(
     { sender: feePayerPublicKey, fee: transactionFee },
@@ -111,7 +111,7 @@ export const makeAndSendTransaction = async <State extends ToString>({
     );
   }
 
-  let state = getState();
+  let state = await getState();
 
   let stateChanged = false;
   while (!stateChanged) {
