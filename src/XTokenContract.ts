@@ -175,7 +175,7 @@ export class XTokenContract extends SmartContract {
         const initialMinimumBalance0 = Circuit.if(totalAmountInCirculation1.equals(SUPPLY0), acctBalance1.div(3).mul(2), UInt64.from(0));
         Circuit.log('initialMinimumBalance0:', initialMinimumBalance0);
 
-        const cliffTime0 = UInt32.from('2');// TODO
+        const cliffTime0 = UInt32.from('5');// TODO
         const cliffAmount0 = UInt64.from(initialMinimumBalance0.div(10));
         const vestingPeriod0 = UInt32.from('1');// default == 1
         const vestingIncrement0 = UInt64.from(initialMinimumBalance0.div(10));
