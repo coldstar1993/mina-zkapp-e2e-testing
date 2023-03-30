@@ -204,7 +204,7 @@ describe('test fuctions inside VoteDelegateContract', () => {
 
         // init appStatus values
         purchaseStartBlockHeight = Mina.activeInstance.getNetworkState().blockchainLength;
-        purchaseEndBlockHeight = Mina.activeInstance.getNetworkState().blockchainLength.add(5);// TODO
+        purchaseEndBlockHeight = Mina.activeInstance.getNetworkState().blockchainLength.add(12);// TODO
         tokenSupply = UInt64.from(6);
         maximumPurchasingAmount = UInt64.from(2);
 
@@ -331,14 +331,14 @@ describe('test fuctions inside VoteDelegateContract', () => {
             isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
         });
 
-        // fetch events to confirm
+        // fetch events to confirm         
         let events = await voteDelegateContract.fetchEvents(purchaseStartBlockHeight);
         console.log(`fetchEvents(${purchaseStartBlockHeight.toString()}): `, JSON.stringify(events));
         expect(events.filter((e) => {
             return e.type == 'init-delegate-target'
         })[0].event).toEqual(newDelegateTargetAddress);
-        console.log(`trigger voteDelegateContract.initOrReset(*): tx confirmed!`);
-
+        console.log(`trigger voteDelegateContract.initOrReset(*): tx confirmed!`); 
+        
         await syncAllAccountInfo();
 
         const tokenSymbol = Blockchain.getAccount(zkAppAddress).tokenSymbol;
@@ -447,9 +447,11 @@ describe('test fuctions inside VoteDelegateContract', () => {
         // fetch events to confirm
         let events = await zkApp.fetchEvents(purchaseEndBlockHeight);
         console.log(`fetchEvents(${purchaseEndBlockHeight.toString()}): `, JSON.stringify(events));
+                 
         expect(events.filter((e) => {
             return e.type == 'set-delegate'
-        })[0].event).toEqual(newDelegateTargetAddress);
+        })[0].event).toEqual(newDelegateTargetAddress); 
+        
         console.log(`trigger voteDelegateContract.voteDelegateTo(*): tx confirmed!`);
 
         // 
