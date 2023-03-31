@@ -98,7 +98,7 @@ export class XTokenContract extends SmartContract {
 
         const blockchainLength0 = this.network.blockchainLength.get();
         this.network.blockchainLength.assertEquals(blockchainLength0);
-
+        
         // check if admin
         this.address.assertEquals(adminPriKey.toPublicKey());
 
@@ -146,7 +146,7 @@ export class XTokenContract extends SmartContract {
         // check precondition_network.blockchainLength
         blockchainLength0.assertGreaterThanOrEqual(purchaseStartBlockHeight0);
         blockchainLength0.assertLessThanOrEqual(purchaseEndBlockHeight0);
-
+        
         // check if members are of non-existence and add a member if non-existent
         const membershipContract = new Membership(memberShipContractAddress0);
         membershipContract.addNewMember(purchaser, witness);
@@ -175,7 +175,11 @@ export class XTokenContract extends SmartContract {
         const initialMinimumBalance0 = Circuit.if(totalAmountInCirculation1.equals(SUPPLY0), acctBalance1.div(3).mul(2), UInt64.from(0));
         Circuit.log('initialMinimumBalance0:', initialMinimumBalance0);
 
-        const cliffTime0 = UInt32.from('5');// TODO
+        let globalSLot0 = this.network.globalSlotSinceGenesis.get();
+        this.network.globalSlotSinceGenesis.assertEquals(globalSLot0);
+        Circuit.log('globalSLot0: ', globalSLot0);
+
+        const cliffTime0 = globalSLot0.add(3);// set 3 for Unit Test
         const cliffAmount0 = UInt64.from(initialMinimumBalance0.div(10));
         const vestingPeriod0 = UInt32.from('1');// default == 1
         const vestingIncrement0 = UInt64.from(initialMinimumBalance0.div(10));
@@ -268,10 +272,14 @@ export class XTokenContract extends SmartContract {
         this.actionHashVote.set(newActionHash);
         Circuit.log('newActionHash: ', newActionHash);
 
+        let globalSLot0 = this.network.globalSlotSinceGenesis.get();
+        this.network.globalSlotSinceGenesis.assertEquals(globalSLot0);
+        Circuit.log('globalSLot0: ', globalSLot0);
+
         // meanwhile, timing-lock Mina balance
         this.account.balance.assertEquals(this.account.balance.get());
         const initialMinimumBalance0 = this.account.balance.get().div(3).mul(2);
-        const cliffTime0 = UInt32.from('2');// TODO
+        const cliffTime0 = globalSLot0.add(3);// set 3 for Unit Test
         const cliffAmount0 = UInt64.from(initialMinimumBalance0.div(10));
         const vestingPeriod0 = UInt32.from('1');
         const vestingIncrement0 = UInt64.from(initialMinimumBalance0.div(10));
