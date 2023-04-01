@@ -3,7 +3,7 @@ import { syncAcctInfo } from "./utils.js";
 import { XTokenContract } from "./XTokenContract.js";
 
 /**
- * a consumer demo to transfer tokens from holders
+ * a consumer demo to transfer tokens from token holders
  */
 export class ConsumerContract extends SmartContract {
     @state(PublicKey) xTokenContractAddress = State<PublicKey>();
@@ -21,6 +21,12 @@ export class ConsumerContract extends SmartContract {
         });
     }
 
+    /**
+     * init or reset the contract account by admin of this account
+     * @param xTokenContractAddress 
+     * @param cost costing custom token amounts
+     * @param adminPriKey the private of deployed ConsumerContract
+     */
     @method initOrReset(xTokenContractAddress: PublicKey, cost: UInt64, adminPriKey: PrivateKey) {
         this.address.assertEquals(adminPriKey.toPublicKey());
 
@@ -28,6 +34,10 @@ export class ConsumerContract extends SmartContract {
         this.cost.set(cost);
     }
 
+    /**
+     * act as a kind of manner to consume XTKN tokens
+     * @param consumerAddr 
+     */
     @method consume(consumerAddr: PublicKey) {
         this.xTokenContractAddress.assertEquals(this.xTokenContractAddress.get());
         this.cost.assertEquals(this.cost.get());
