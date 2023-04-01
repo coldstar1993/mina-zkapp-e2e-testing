@@ -7,7 +7,7 @@ This zkApp is an demo working for ICO activities, covering features as below:
 
 2. specify which block height the ICO starts & ends,
 
-3. purchase tokens(mint), and record the initial members during ICO,
+3. purchase tokens(by mint), and record the initial members during ICO,
 
 4. initial members vote to burn extra tokens or not if there are tokens lefts,
 
