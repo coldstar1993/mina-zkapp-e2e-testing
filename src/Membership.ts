@@ -1,7 +1,12 @@
 import { Bool, Field, MerkleMapWitness, method, PublicKey, SmartContract, State, state, Permissions, UInt32, MerkleMap, Poseidon, Circuit, CircuitString, PrivateKey } from "snarkyjs";
 
+/**
+ * a contract recording memberTreeRoot and memberCount of initial members of XTKN tokens
+ */
 export class Membership extends SmartContract {
-    // member tree root
+    /**
+     * member tree root, recording all initial members
+     */ 
     @state(Field) memberTreeRoot = State<Field>();
 
     @state(UInt32) memberCount = State<UInt32>();
@@ -32,6 +37,11 @@ export class Membership extends SmartContract {
         this.memberCount.set(memberCount);
     }
 
+    /**
+     * 
+     * @param member 
+     * @param witness 
+     */
     @method addNewMember(member: PublicKey, witness: MerkleMapWitness) {// TODO need check auth
         const memberCount0 = this.memberCount.get();
         this.memberCount.assertEquals(memberCount0);
@@ -48,6 +58,12 @@ export class Membership extends SmartContract {
         this.memberCount.set(memberCount0.add(1));
     }
 
+    /**
+     * check if a member is existing
+     * @param pub 
+     * @param witness 
+     * @returns 
+     */
     checkMemberShip(pub: PublicKey, witness: MerkleMapWitness): Bool {
         const memberTreeRoot0 = this.memberTreeRoot.get();
         this.memberTreeRoot.assertEquals(memberTreeRoot0);
@@ -60,10 +76,19 @@ export class Membership extends SmartContract {
         return Circuit.if(memberTreeRoot0.equals(root1), Bool(true), Bool(false));
     }
 
+    /**
+     * assert a member is existing
+     * @param pub 
+     * @param witness 
+     */
     @method assertMemberShip(pub: PublicKey, witness: MerkleMapWitness) {
         this.checkMemberShip(pub, witness).assertTrue();
     }
     
+    /**
+     * assert a member count is true
+     * @param memberCnt 
+     */
     @method assertEqualsMemberCount(memberCnt: UInt32) {
         const memberCount0 = this.memberCount.get();
         this.memberCount.assertEquals(memberCount0);
