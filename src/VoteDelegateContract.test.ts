@@ -133,11 +133,6 @@ describe('test fuctions inside VoteDelegateContract', () => {
     beforeAll(async () => {
         await isReady;
 
-        let tmp1 = PrivateKey.random();
-        console.log('sample - Membership\'s privateKey: ', tmp1.toBase58(), 'pubKey: ', tmp1.toPublicKey().toBase58());
-        let tmp0 = PrivateKey.random();
-        console.log('sample - XTokenContract\'s privateKey: ', tmp0.toBase58(), 'pubKey: ', tmp0.toPublicKey().toBase58());
-
         Blockchain = process.env.TEST_ON_BERKELEY! == 'true' ? Mina.Network({
             mina: 'https://proxy.berkeley.minaexplorer.com/graphql',
             archive: 'https://archive.berkeley.minaexplorer.com/',
@@ -166,14 +161,15 @@ describe('test fuctions inside VoteDelegateContract', () => {
         await syncNetworkStatus();
 
         if (process.env.TEST_ON_BERKELEY! == 'true') {// Berkeley
-            senderKey = PrivateKey.fromBase58('EKDmWEWjC6UampzAph9ddAbnmuBgHAfiQhAmSVT6ACJgPFzCsoTW');
-            senderAccount = senderKey.toPublicKey();//EKDmWEWjC6UampzAph9ddAbnmuBgHAfiQhAmSVT6ACJgPFzCsoTW  pubKey:  B62qkvenQ4bZ5qt5QJN8bmEq92KskKH4AZP7pgbMoyiMAccWTWjHRoD
+            senderKey = PrivateKey.random();
+            senderAccount = senderKey.toPublicKey();
 
             console.log(`Funding fee payer ${senderAccount.toBase58()} and waiting for inclusion in a block..`);
-            // await Mina.faucet(senderAccount);
+            await Mina.faucet(senderAccount);
             await loopUntilAccountExists({
                 address: senderAccount,
-                eachTimeNotExist: () => { console.log('[loopUntilAccountExists] senderAccount is still not exiting, loop&wait...'); },
+                tokenId: Field(1),// MINA
+                eachTimeNotExist: () => { console.log('[await loopUntilAccountExists] senderAccount is still not exiting, loop&wait...'); },
                 isZkAppAccount: false,
                 isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
             });
