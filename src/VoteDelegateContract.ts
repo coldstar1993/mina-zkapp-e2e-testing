@@ -37,6 +37,8 @@ export class VoteDelegateContract extends SmartContract {
 
     /**
      * init or reset the account by admin of this account
+     * 
+     * TODO could improve it by signature on all params&accountNonce
      * @param xTokenContractAddress 
      * @param memberShipContractAddress 
      * @param voterNullifierTreeRoot 
@@ -58,6 +60,8 @@ export class VoteDelegateContract extends SmartContract {
     /**
      * admin of xTokenContract will collect all votes from all initial members, and decide if the specified `delegate` could be set to `xTokenContract` account. <br/>
      * if `voteFor` is greater than `voteAgainst`, then set it.
+     * 
+     * TODO could improve it by signature on all params&accountNonce
      * @param xTokenContractAdminPriKey 
      * @param proof is the result from VoteZkProgram in ./vote.ts
      */
