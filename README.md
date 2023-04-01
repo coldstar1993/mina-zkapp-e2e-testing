@@ -13,7 +13,7 @@ This zkApp is an demo working for ICO activities, covering features as below:
 
 5. automatically timing-lock partial MINA and release them periodically,
 
-6. transfer custom tokens by proof auth & by signature, burn custom tokens by signature,
+6. transfer custom tokens by proof auth & by holders' signature, burn custom tokens by holders' signature,
 
 7. initial members vote to set new 'delegate' address,
 
@@ -72,7 +72,13 @@ token info inside `XTokenContract.ts`：
 		* Set Delegate
 
 ## Unit Test
-* XTokenContract.test.ts【!!NOTE: cost much time & memory resource】
+Totally, Run these Unit Tests in sequence will cost 40mins almost locally, and 60mins almost On Berkeley.
+
+* Membership.test.ts【**!!NOTE: cost almost 10mins Locally, 20 mins on Berkeley & 4G memory resource**】
+  	* CHECK tx should fail when store an existing user
+	* CHECK tx should succeed when store an non-existing user
+
+* XTokenContract.test.ts【**!!NOTE: cost almost 20mins Locally, 40 mins on Berkeley & 6G memory resource**】
   	* CHECK tx should succeed when purchase tokens by an non-existing user, but should fail when purchase by an existing user
   	* CHECK tx should fail when purchase tokens with EXCEEDING precondition.network.blockchainLength
   	* CHECK tx should fail when purchase tokens when EXCEEDING maximum purchasing amount
@@ -84,12 +90,11 @@ token info inside `XTokenContract.ts`：
 	* CHECK burn custom tokens by holders' signature
 	* CHECK 'setDelegate' with Permission.proof cannot be set with Signature authorization
 
-* VoteDelegateContract.test.ts【!!NOTE: cost much time & memory resource】
+* VoteDelegateContract.test.ts【**!!NOTE: cost almost 30mins Locally, 50 mins on Berkeley & 8G memory resource**】
   	* CHECK all members (recursively) votes to set delegate
 
-* Membership.test.ts
-  	* CHECK tx should fail when store an existing user
-	* CHECK tx should succeed when store an non-existing user
+* ConsumerContract.test.ts【**!!NOTE: cost almost 10mins Locally, 20 mins on Berkeley & 4G memory resource**】
+    * Check thirdpart zkapp could successfully transfer custom token by holders' signature from XTokenContract.
 
 NOTE: 
 * You could set `cross-env TEST_ON_BERKELEY=true/false` to start unit tests.
@@ -119,8 +124,30 @@ npm run coverage
 
 ## How to deploy
 
+* firstly, deploy `Membership` and later trigger a tx to init it
+	```
+				membershipZkApp.initOrReset(new MerkleMap().getRoot(), UInt32.from(0), membershipZkAppPrivateKey);
+	```
+* secondly, deploy `XTokenContract` and later trigger a tx to init it with Membership account and some other parameters.
+	```
+		        xTokenContract.initOrReset(
+                    tokenSupply,
+                    maximumPurchasingAmount,
+                    membershipZkAppAddress,
+                    purchaseStartBlockHeight,
+                    purchaseEndBlockHeight,
+                    zkAppPrivateKey
+                );
+	```
+* thirdly, deploy `VoteDelegateContract` and later trigger a tx to init it with Membership & XTokenContract accounts and some other parameters.
+	```
+		        voteDelegateContract.initOrReset(zkAppAddress, membershipZkAppAddress, new MerkleMap().getRoot(), newDelegateTargetAddress, voteDelegateContractPrivateKey);
 
-
+	```
+* forthly, deploy `ConsumerContract` and later trigger a tx to init it with Membership account and some other parameters.
+	```
+				consumerContract.initOrReset(zkAppAddress, UInt64.from(1), consumerContractPrivateKey);
+	```
 ## License
 
 [Apache-2.0](LICENSE)
