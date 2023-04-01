@@ -124,11 +124,11 @@ npm run coverage
 
 ## How to deploy
 
-* firstly, deploy `Membership` and later trigger a tx to init it
+* firstly, deploy `Membership` and later trigger a tx to init it as below:
 	```
 				membershipZkApp.initOrReset(new MerkleMap().getRoot(), UInt32.from(0), membershipZkAppPrivateKey);
 	```
-* secondly, deploy `XTokenContract` and later trigger a tx to init it with Membership account and some other parameters.
+* secondly, deploy `XTokenContract` and later trigger a tx to init it with Membership account and some other parameters as below:.
 	```
 		        xTokenContract.initOrReset(
                     tokenSupply,
@@ -139,12 +139,12 @@ npm run coverage
                     zkAppPrivateKey
                 );
 	```
-* thirdly, deploy `VoteDelegateContract` and later trigger a tx to init it with Membership & XTokenContract accounts and some other parameters.
+* thirdly, deploy `VoteDelegateContract` and later trigger a tx to init it with Membership & XTokenContract accounts and some other parameters as below:.
 	```
 		        voteDelegateContract.initOrReset(zkAppAddress, membershipZkAppAddress, new MerkleMap().getRoot(), newDelegateTargetAddress, voteDelegateContractPrivateKey);
 
 	```
-* forthly, deploy `ConsumerContract` and later trigger a tx to init it with Membership account and some other parameters.
+* forthly, deploy `ConsumerContract` and later trigger a tx to init it with Membership account and some other parameters as below:.
 	```
 				consumerContract.initOrReset(zkAppAddress, UInt64.from(1), consumerContractPrivateKey);
 	```
