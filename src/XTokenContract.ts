@@ -125,7 +125,9 @@ export class XTokenContract extends SmartContract {
     }
 
     /**
-     * purchase token. 
+     * user purchases token, will fail if an exsiting user;
+     * 
+     * timing-lock Mina balance if totalAmountInCirculation == SUPPLY
      * @param purchaser 
      * @param purchasingAmount 
      * @param witness 
