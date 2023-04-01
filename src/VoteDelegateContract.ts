@@ -3,6 +3,9 @@ import { Membership } from "./Membership.js";
 import { VoteProof } from "./vote.js";
 import { XTokenContract } from "./XTokenContract.js";
 
+/**
+ * A contract working with zkProgram to recursively collect votes from all initial members and vote which `delegate` address to be set.
+ */
 export class VoteDelegateContract extends SmartContract {
     // events
     events = {
@@ -13,8 +16,14 @@ export class VoteDelegateContract extends SmartContract {
 
     @state(PublicKey) memberShipContractAddress = State<PublicKey>();
 
+    /**
+     * a MerkleMap root, record the voter to avoid duplicate vote!
+     */
     @state(Field) voterNullifierTreeRoot = State<Field>();
 
+    /**
+     * new `Delegate` address
+     */
     @state(PublicKey) targetDelegateTo = State<PublicKey>();
 
     init() {
@@ -26,6 +35,14 @@ export class VoteDelegateContract extends SmartContract {
         });
     }
 
+    /**
+     * init or reset the account by admin of this account
+     * @param xTokenContractAddress 
+     * @param memberShipContractAddress 
+     * @param voterNullifierTreeRoot 
+     * @param newDelegateTarget 
+     * @param adminPriKey 
+     */
     @method initOrReset(xTokenContractAddress: PublicKey, memberShipContractAddress: PublicKey, voterNullifierTreeRoot: Field, newDelegateTarget: PublicKey, adminPriKey: PrivateKey) {
         // check if admin
         this.address.assertEquals(adminPriKey.toPublicKey());
@@ -38,6 +55,12 @@ export class VoteDelegateContract extends SmartContract {
         this.emitEvent("init-delegate-target", newDelegateTarget);
     }
 
+    /**
+     * admin of xTokenContract will collect all votes from all initial members, and decide if the specified `delegate` could be set to `xTokenContract` account. <br/>
+     * if `voteFor` is greater than `voteAgainst`, then set it.
+     * @param xTokenContractAdminPriKey 
+     * @param proof is the result from VoteZkProgram in ./vote.ts
+     */
     @method voteDelegateTo(xTokenContractAdminPriKey: PrivateKey, proof: VoteProof) {
         proof.verify();
         const voteState = proof.publicInput;
