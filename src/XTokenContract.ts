@@ -1,18 +1,27 @@
 import { Int64, Experimental, Circuit, MerkleMapWitness, Field, method, Permissions, PrivateKey, PublicKey, Reducer, Signature, SmartContract, state, State, Struct, UInt32, UInt64, CircuitString, Poseidon, Account, AccountUpdate, Bool, VerificationKey } from "snarkyjs"
 import { Membership } from "./Membership.js";
 
+/**
+ * event entity: record how many custom tokens a purchaser purchased 
+ */
 class PurchaseEvent extends Struct({ purchaser: PublicKey, purchasingAmount: UInt64 }) {
     static createEmptyEntity() {
         return new PurchaseEvent({ purchaser: PrivateKey.random().toPublicKey(), purchasingAmount: UInt64.zero });
     }
 }
 
+/**
+ * action entity: recording who voted which
+ */
 class VoteNote extends Struct({ voter: PublicKey, voteOption: UInt64 }) {
     static createEmptyEntity() {
         return new VoteNote({ voter: PublicKey.empty(), voteOption: UInt64.zero });
     }
 }
 
+/**
+ * an ICO contract offerring custom tokens
+ */
 export class XTokenContract extends SmartContract {
     // events
     events = {
@@ -48,14 +57,14 @@ export class XTokenContract extends SmartContract {
 
             setTiming: Permissions.proofOrSignature(),
             setVotingFor: Permissions.proofOrSignature(),
-            // incrementNonce: Permissions.proof()
+            // incrementNonce: Permissions.proof(),
         });
 
         this.actionHashVote.set(Reducer.initialActionsHash);
     }
 
     /**
-     * init
+     * init or reset by admin
      */
     @method initOrReset(supply: UInt64, maximumPurchasingAmount: UInt64, memberShipContractAddress: PublicKey, purchaseStartBlockHeight: UInt32, purchaseEndBlockHeight: UInt32, adminPriKey: PrivateKey) {
         // check if admin
@@ -85,7 +94,7 @@ export class XTokenContract extends SmartContract {
     }
 
     /**
-     * need proof to transfer Mina
+     * need proof to transfer Mina. Tx fails if voilate time-locked Mina
      */
     @method transferMina(to: PublicKey, amount: UInt64, adminPriKey: PrivateKey) {
         const SUPPLY0 = this.SUPPLY.get();
@@ -113,6 +122,12 @@ export class XTokenContract extends SmartContract {
         this.send({ to, amount });
     }
 
+    /**
+     * purchase token. 
+     * @param purchaser 
+     * @param purchasingAmount 
+     * @param witness 
+     */
     @method purchaseToken(purchaser: PublicKey, purchasingAmount: UInt64, witness: MerkleMapWitness) {
         purchasingAmount.assertGreaterThan(UInt64.from(0));
 
@@ -152,7 +167,8 @@ export class XTokenContract extends SmartContract {
         // check if members are of non-existence and add a member if non-existent
         const membershipContract = new Membership(memberShipContractAddress0);
         membershipContract.addNewMember(purchaser, witness);
-
+        
+        // cal how many Mina will be, and sub purchase's balance
         let minaCost = purchasingAmount.mul(0.5e9);
         let purchaserAccountUpdate = AccountUpdate.createSigned(purchaser);
         purchaserAccountUpdate.balance.subInPlace(minaCost);
@@ -181,7 +197,7 @@ export class XTokenContract extends SmartContract {
         this.network.globalSlotSinceGenesis.assertEquals(globalSLot0);
         Circuit.log('globalSLot0: ', globalSLot0);
 
-        const cliffTime0 = globalSLot0.add(4);// set 3 for Unit Test
+        const cliffTime0 = globalSLot0.add(4);// set +4 for Unit Test
         const cliffAmount0 = UInt64.from(initialMinimumBalance0.div(10));
         const vestingPeriod0 = UInt32.from('1');// default == 1
         const vestingIncrement0 = UInt64.from(initialMinimumBalance0.div(10));
@@ -189,7 +205,7 @@ export class XTokenContract extends SmartContract {
     }
 
     /**
-     * 
+     * purchaser could vote if burn the rest tokens or keep it. this method could avoid duplicate votes.
      * @param voter 
      * @param voteOption 
      * @param witness 
@@ -215,7 +231,7 @@ export class XTokenContract extends SmartContract {
         // check voteOption is valid: in [1, 2]
         voteOption.assertGreaterThanOrEqual(UInt64.from(1));
         voteOption.assertLessThanOrEqual(UInt64.from(2));
-
+        // record <voter, voteNote> as Action, so need to check if the voter has voted before.
         const pendingActions0 = this.reducer.getActions({ fromActionHash: this.actionHashVote.get() });
         Circuit.log('pendingActions0: ', pendingActions0);
 
@@ -229,6 +245,9 @@ export class XTokenContract extends SmartContract {
         this.reducer.dispatch(new VoteNote({ voter: voterPk, voteOption }));
     }
 
+    /**
+     * reduce all Actions of <voter, voteNote>, to decide if burn the rest tokens or keep it. 
+     */
     @method rollupVoteNote() {
         const actionHashVote0 = this.actionHashVote.get();
         this.actionHashVote.assertEquals(actionHashVote0);
@@ -246,7 +265,7 @@ export class XTokenContract extends SmartContract {
         const blockchainLength0 = this.network.blockchainLength.get();
         this.network.blockchainLength.assertEquals(blockchainLength0);
 
-        // check precondition_network.blockHeight
+        // check precondition_network.blockHeight is greaterorequal purchaseEndBlockHeight
         this.network.blockchainLength.assertBetween(this.purchaseEndBlockHeight.get(), UInt32.MAXINT());
 
         const pendingActions = this.reducer.getActions({ fromActionHash: this.actionHashVote.get() });
@@ -293,6 +312,12 @@ export class XTokenContract extends SmartContract {
         this.account.timing.set({ initialMinimumBalance: initialMinimumBalanceX, cliffTime: cliffTimeX, cliffAmount: cliffAmountX, vestingPeriod: vestingPeriodX, vestingIncrement: vestingIncrementX });
     }
 
+    /**
+     * called by `VoteDelegateContract`, to set new `delegate` by admin. 
+     * 
+     * @param target new delegate address
+     * @param adminPriKey 
+     */
     @method delegateTo(target: PublicKey, adminPriKey: PrivateKey) {
         const blockchainLength0 = this.network.blockchainLength.get();
         this.network.blockchainLength.assertEquals(blockchainLength0);
@@ -312,6 +337,13 @@ export class XTokenContract extends SmartContract {
         this.emitEvent("set-delegate", target);
     }
 
+    /**
+     * approve transfer custom token by proof auth
+     * @param senderAddress 
+     * @param receiverAddress 
+     * @param amount 
+     * @param callback 
+     */
     @method approveTransferCallback(
         senderAddress: PublicKey,
         receiverAddress: PublicKey,
@@ -335,6 +367,11 @@ export class XTokenContract extends SmartContract {
         receiverAccountUpdate.balance.addInPlace(amount);
     }
 
+    /**
+     * deploy a new token account, for transfer by proof auth
+     * @param address 
+     * @param verificationKey 
+     */
     @method deployZkapp(address: PublicKey, verificationKey: VerificationKey) {
         let tokenId = this.token.id;
         let zkapp = AccountUpdate.defaultAccountUpdate(address, tokenId);
@@ -344,6 +381,12 @@ export class XTokenContract extends SmartContract {
         zkapp.requireSignature();
     }
 
+    /**
+     * send custom token by holder's Signature
+     * @param senderAddress 
+     * @param receiverAddress 
+     * @param amount 
+     */
     @method sendTokens(
         senderAddress: PublicKey,
         receiverAddress: PublicKey,
@@ -356,6 +399,14 @@ export class XTokenContract extends SmartContract {
         });
     }
 
+    /**
+     * burn holder's token by holder's Signature,
+     * 
+     * will decrease SUPPLY and total Amount In Circulation, so need ‘this.SUPPLY.assertEquals(this.totalAmountInCirculation)’
+     * 
+     * @param targetAddress 
+     * @param amount 
+     */
     @method burnTokens(
         targetAddress: PublicKey,
         amount: UInt64
