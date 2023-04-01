@@ -1,11 +1,11 @@
 import { AccountUpdate, Bool, Experimental, fetchAccount, fetchLastBlock, Field, isReady, MerkleMap, Mina, Poseidon, PrivateKey, PublicKey, Reducer, shutdown, Signature, SmartContract, Types, UInt32, UInt64 } from 'snarkyjs';
 import { XTokenContract, NormalTokenUser } from './XTokenContract.js';
 import { Membership } from './Membership.js';
-import { loopUntilAccountExists, makeAndSendTransaction } from './utils.js';
 import { fetchActions } from 'snarkyjs/dist/node/lib/fetch.js';
+import { loopUntilAccountExists, makeAndSendTransaction, syncNetworkStatus, syncAcctInfo, syncActions, waitBlockHeightToExceed } from './utils.js';
 
 describe('test fuctions inside XTokenContract', () => {
-    let needDeployContractEachTime = true;
+    let isLocalBlockChain = !(process.env.TEST_ON_BERKELEY! == 'true');
 
     let Blockchain: any;
     let transactionFee = 100_000_000;
@@ -35,87 +35,17 @@ describe('test fuctions inside XTokenContract', () => {
     let membershipAcctInfo: Types.Account | undefined;
     let zkAppAcctInfo: Types.Account | undefined;
 
-    async function syncActions(targetAddr: PublicKey) {
-        if (process.env.TEST_ON_BERKELEY! == 'true') {
-            for (let i = 0; i < 5; i++) {// just for 5 iterations, enough
-                let actionsList;
-                try {
-                    // get the length of actions list, and compare later to confirm the tx is done!
-                    actionsList = await fetchActions({ publicKey: targetAddr.toBase58() });// will throw error if duplicate actions issue.
-                } catch (error) {// exisitng issue: duplicate actions 
-                    console.log(`error: await fetchActions({ publicKey: ${targetAddr.toBase58()} }): `, JSON.stringify(error));
-
-                    console.log(`wait for a block and fetchActions again...`);
-                    await waitBlockHeightToExceed((await syncNetworkStatus()).blockchainLength.add(1));
-                }
-
-                if (!(actionsList instanceof Array)) {
-                    console.log(`error: await fetchActions({ publicKey: ${targetAddr.toBase58()} }): `, JSON.stringify(actionsList));
-                    throw new Error('fetchActions failed! Pls try later.');
-                }
-
-                return actionsList;
-            }
-        } else {
-            return Mina.activeInstance.getActions(targetAddr);
-        }
-    }
-
-    async function syncNetworkStatus() {
-        if (process.env.TEST_ON_BERKELEY! == 'true') {
-            await fetchLastBlock();
-            console.log('sync Berkeley Network status: done!');
-        }
-        console.log('current network state: ', JSON.stringify(Mina.activeInstance.getNetworkState()));
-        return Mina.activeInstance.getNetworkState();
-    }
-
-    async function syncAcctInfo(acctAddr: PublicKey) {
-        let acctInfo: Types.Account | undefined;
-        if (process.env.TEST_ON_BERKELEY! == 'true') {
-            acctInfo = (await fetchAccount({ publicKey: acctAddr })).account!;
-        } else {
-            acctInfo = Mina.activeInstance.getAccount(acctAddr);
-        }
-
-        return acctInfo;
-    }
-
-    async function syncAllAccountInfo() {
-        senderAcctInfo = await syncAcctInfo(senderAccount);
-        zkAppAcctInfo = await syncAcctInfo(zkAppAddress);
-        membershipAcctInfo = await syncAcctInfo(membershipZkAppAddress);
+    async function syncAllAccountInfo(isLocalBlockChain?: boolean) {
+        senderAcctInfo = await syncAcctInfo(senderAccount, Field(1), isLocalBlockChain);
+        zkAppAcctInfo = await syncAcctInfo(zkAppAddress, Field(1), isLocalBlockChain);
+        membershipAcctInfo = await syncAcctInfo(membershipZkAppAddress, Field(1), isLocalBlockChain);
         console.log('current senderAcctInfo: ', JSON.stringify(senderAcctInfo));
         console.log('current membershipAcctInfo: ', JSON.stringify(membershipAcctInfo));
         console.log('current zkAppAcctInfo: ', JSON.stringify(zkAppAcctInfo));
     }
 
-    async function waitBlockHeightToExceed(aHeight: UInt32) {
-        if (process.env.TEST_ON_BERKELEY! == 'true') {
-            // wait for Berkeley's blockchainLength > aHeight
-            while (true) {
-                let blockchainLength = (await syncNetworkStatus()).blockchainLength;
-                console.log(`aHeight: ${aHeight.toString()}, current blockchainLength: ${blockchainLength.toString()}`);
-
-                if (aHeight.lessThan(blockchainLength).toBoolean()) {
-                    break;
-                }
-
-                let blockGap = Number.parseInt(aHeight.sub(blockchainLength).toString());
-                blockGap = blockGap == 0 ? 1 : blockGap;
-                console.log(`now sleep for ${blockGap * 3 * 60} sec for blockheight grows...` );
-                
-                await new Promise((resolve) => setTimeout(resolve, blockGap * 3 * 60 * 1000));// about 3 minutes/block
-            }
-        } else {
-            Blockchain.setBlockchainLength(aHeight.add(1));
-            console.log(`aHeight: ${aHeight.toString()}, current blockchainLength: ${Mina.activeInstance.getNetworkState().blockchainLength.toString()}`);
-        }
-        console.log('current network state: ', JSON.stringify(Mina.activeInstance.getNetworkState()));
-    }
-
     const constructOneUserAndPurchase = async (userPriKey: PrivateKey, purchaseAmount0: UInt64, prePurchaseCallback: any) => {
-        await syncAllAccountInfo();
+        await syncAllAccountInfo(isLocalBlockChain);
 
         let userPubKey = userPriKey.toPublicKey();
 
@@ -145,29 +75,23 @@ describe('test fuctions inside XTokenContract', () => {
             statesEqual(state1, state2) {
                 return state2.equals(state1).toBoolean();
             },
-            isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
+            isLocalBlockChain
         });
         // store the user
         tokenMembersMerkleMap.set(indx, Field(1));
 
-        await syncAllAccountInfo();
+        await syncAllAccountInfo(isLocalBlockChain);
     }
 
     beforeAll(async () => {
+        console.time('All test suites begin...');
         await isReady;
 
-        let tmp1 = PrivateKey.random();
-        console.log('sample - Membership\'s privateKey: ', tmp1.toBase58(), 'pubKey: ', tmp1.toPublicKey().toBase58());
-        let tmp0 = PrivateKey.random();
-        console.log('sample - XTokenContract\'s privateKey: ', tmp0.toBase58(), 'pubKey: ', tmp0.toPublicKey().toBase58());
-
-        Blockchain = process.env.TEST_ON_BERKELEY! == 'true' ? Mina.Network({
+        Blockchain = !isLocalBlockChain ? Mina.Network({
             mina: 'https://proxy.berkeley.minaexplorer.com/graphql',
             archive: 'https://archive.berkeley.minaexplorer.com/',
         }) : Mina.LocalBlockchain({ proofsEnabled: true });
         Mina.setActiveInstance(Blockchain);
-
-        console.log(await syncActions(PublicKey.fromBase58('B62qpvEFULbLYRK3pthRATwHa8GNSQosP3ghbn76bch6HJoEXJM9kyz')));
 
         membershipVerificationKey = (await Membership.compile()).verificationKey;
         console.log(`Membership.compile done!`);
@@ -180,13 +104,15 @@ describe('test fuctions inside XTokenContract', () => {
     });
 
     afterAll(() => {
+        console.timeEnd('All test suites begin...');
+
         setInterval(shutdown, 0);
     });
 
     beforeEach(async () => {
-        await syncNetworkStatus();
+        await syncNetworkStatus(isLocalBlockChain);
 
-        if (process.env.TEST_ON_BERKELEY! == 'true') {// Berkeley
+        if (!isLocalBlockChain) {// Berkeley
             senderKey = PrivateKey.random();
             senderAccount = senderKey.toPublicKey();
 
@@ -197,7 +123,7 @@ describe('test fuctions inside XTokenContract', () => {
                 tokenId: Field(1),// MINA
                 eachTimeNotExist: () => { console.log('[await loopUntilAccountExists] senderAccount is still not exiting, loop&wait...'); },
                 isZkAppAccount: false,
-                isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
+                isLocalBlockChain
             });
             console.log('senderAccount is funded!');
 
@@ -206,16 +132,16 @@ describe('test fuctions inside XTokenContract', () => {
         }
 
         console.log(`senderKey: ${senderKey.toBase58()}, senderAccount: ${senderAccount.toBase58()}`);
-        senderAcctInfo = await syncAcctInfo(senderAccount);
+        senderAcctInfo = await syncAcctInfo(senderAccount, Field(1), isLocalBlockChain);
         let { nonce, balance } = senderAcctInfo;
         console.log(`initially, senderAccount.nonce: ${nonce}, senderAccount.balance: ${balance}`);
 
-        membershipZkAppPrivateKey = needDeployContractEachTime ? PrivateKey.random() : PrivateKey.fromBase58('EKFRWWuziCMDCoTqzhsaYBeRPDt2tKbPEYwCLgecfsYgUPnaJfji');
+        membershipZkAppPrivateKey = PrivateKey.random();
         membershipZkAppAddress = membershipZkAppPrivateKey.toPublicKey();
         membershipZkApp = new Membership(membershipZkAppAddress);
         console.log('membershipZkApp\'s PrivateKey: ', membershipZkAppPrivateKey.toBase58(), ' ,  membershipZkApp\'s Address: ', membershipZkAppAddress.toBase58());
 
-        zkAppPrivateKey = needDeployContractEachTime ? PrivateKey.random() : PrivateKey.fromBase58('EKEHu59a3GUam6rhuVUaA5wXeunJ1mmxgPVZABCj3ix1hVaXgJZK');
+        zkAppPrivateKey = PrivateKey.random();
         zkAppAddress = zkAppPrivateKey.toPublicKey();
         zkApp = new XTokenContract(zkAppAddress);
         console.log('xTokenContractZkApp\'s PrivateKey: ', zkAppPrivateKey.toBase58(), ' , xTokenContractZkApp\'s Address: ', zkAppAddress.toBase58());
@@ -226,60 +152,61 @@ describe('test fuctions inside XTokenContract', () => {
         tokenSupply = UInt64.from(6);
         maximumPurchasingAmount = UInt64.from(2);
 
-        // TODO to confirm if need deploy token each time
-        if (needDeployContractEachTime) {
-            console.log(`Membership Contract: deploying...`);
-            let tx_deployMembership = await Mina.transaction({ sender: senderAccount, fee: transactionFee }, () => {
-                AccountUpdate.fundNewAccount(senderAccount);
-                membershipZkApp.deploy({ zkappKey: membershipZkAppPrivateKey, verificationKey: membershipVerificationKey });
-            });
-            let txId_deployMembership = await tx_deployMembership.sign([senderKey]).send();
-            console.log(`Membership Contract: deployment tx[${txId_deployMembership.hash()!}] sent...`);
-            await txId_deployMembership.wait({ maxAttempts: 1000 });
-            console.log(`Membership Contract: txId.isSuccess:`, txId_deployMembership.isSuccess);
+        console.log(`Membership Contract: deploying...`);
+        let tx_deployMembership = await Mina.transaction({ sender: senderAccount, fee: transactionFee }, () => {
+            AccountUpdate.fundNewAccount(senderAccount);
+            membershipZkApp.deploy({ zkappKey: membershipZkAppPrivateKey, verificationKey: membershipVerificationKey });
+        });
+        let txId_deployMembership = await tx_deployMembership.sign([senderKey]).send();
+        console.log(`Membership Contract: deployment tx[${txId_deployMembership.hash()!}] sent...`);
+        await txId_deployMembership.wait({ maxAttempts: 1000 });
+        console.log(`Membership Contract: txId.isSuccess:`, txId_deployMembership.isSuccess);
 
-            // loop to wait for membership contract to deploy done!
-            await loopUntilAccountExists({
-                address: membershipZkAppAddress, 
-                tokenId: Field(1),// MINA
-                eachTimeNotExist() {
-                    console.log('loop&wait for membership contract to deploy...');
-                }, isZkAppAccount: true, isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
-            });
-            console.log(`Membership Contract: deployment done!`);
-			
-			senderAcctInfo = await syncAcctInfo(senderAccount);
-			console.log('sync senderAcctInfo：', JSON.stringify(senderAcctInfo));
-			
-            console.log(`XTokenContract: deploying...`);
-            // deploy zkApp
-            let tx_deployXTokenContract = await Mina.transaction({ sender: senderAccount, fee: transactionFee }, () => {
-                AccountUpdate.fundNewAccount(senderAccount);
-                zkApp.deploy({ zkappKey: zkAppPrivateKey, verificationKey: zkAppVerificationKey });
-            });
-            let txId_deployXTokenContract = await tx_deployXTokenContract.sign([senderKey]).send();
-            console.log(`XTokenContract: deployment tx[${txId_deployXTokenContract.hash()!}] sent...`);
-            await txId_deployXTokenContract.wait({ maxAttempts: 1000 });
-            console.log(`xTokenContract: txId.isSuccess:`, txId_deployXTokenContract.isSuccess);
+        // loop to wait for membership contract to deploy done!
+        await loopUntilAccountExists({
+            address: membershipZkAppAddress,
+            tokenId: Field(1),// MINA
+            eachTimeNotExist() {
+                console.log('loop&wait for membership contract to deploy...');
+            },
+            isZkAppAccount: true,
+            isLocalBlockChain
+        });
+        console.log(`Membership Contract: deployment done!`);
 
-            // loop to wait for XTokenContract contract to deploy done!
-            await loopUntilAccountExists({
-                address: zkAppAddress, 
-                tokenId: Field(1),// MINA
-                eachTimeNotExist() {
-                    console.log('loop&wait for XTokenContract to deploy...');
-                }, isZkAppAccount: true, isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
-            });
-            console.log(`xTokenContract: deployment done!`);
-        }
+        senderAcctInfo = await syncAcctInfo(senderAccount, Field(1), isLocalBlockChain);
+        console.log('sync senderAcctInfo：', JSON.stringify(senderAcctInfo));
 
-        await syncAllAccountInfo();
+        console.log(`XTokenContract: deploying...`);
+        // deploy zkApp
+        let tx_deployXTokenContract = await Mina.transaction({ sender: senderAccount, fee: transactionFee }, () => {
+            AccountUpdate.fundNewAccount(senderAccount);
+            zkApp.deploy({ zkappKey: zkAppPrivateKey, verificationKey: zkAppVerificationKey });
+        });
+        let txId_deployXTokenContract = await tx_deployXTokenContract.sign([senderKey]).send();
+        console.log(`XTokenContract: deployment tx[${txId_deployXTokenContract.hash()!}] sent...`);
+        await txId_deployXTokenContract.wait({ maxAttempts: 1000 });
+        console.log(`xTokenContract: txId.isSuccess:`, txId_deployXTokenContract.isSuccess);
+
+        // loop to wait for XTokenContract contract to deploy done!
+        await loopUntilAccountExists({
+            address: zkAppAddress,
+            tokenId: Field(1),// MINA
+            eachTimeNotExist() {
+                console.log('loop&wait for XTokenContract to deploy...');
+            },
+            isZkAppAccount: true,
+            isLocalBlockChain
+        });
+        console.log(`xTokenContract: deployment done!`);
+
+        await syncAllAccountInfo(isLocalBlockChain);
 
         tokenMembersMerkleMap = new MerkleMap();
         const merkleRoot0 = tokenMembersMerkleMap.getRoot();
         console.log(`tokenMembersMerkleMap's initial root: ${merkleRoot0.toString()}`);
 
-        await syncNetworkStatus();
+        await syncNetworkStatus(isLocalBlockChain);
 
         // initialize or reset XTokenContract & MembershipZkApp
         console.log(`trigger all contracts to initialize...`);
@@ -316,10 +243,10 @@ describe('test fuctions inside XTokenContract', () => {
                 console.log('state1: ', state1, '  state2: ', state2);
                 return state2 == state1;
             },
-            isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
+            isLocalBlockChain
         });
 
-        await syncAllAccountInfo();
+        await syncAllAccountInfo(isLocalBlockChain);
 
         const tokenSymbol = Blockchain.getAccount(zkAppAddress).tokenSymbol;
         expect(tokenSymbol).toEqual('XTKN');
@@ -328,151 +255,145 @@ describe('test fuctions inside XTokenContract', () => {
         expect(zkAppUri).toEqual('https://github.com/coldstar1993/mina-zkapp-e2e-testing');
     });
 
-    afterEach(async () => {
-        // fetches all events from deployment
-        let events = await zkApp.fetchEvents(purchaseStartBlockHeight);
-        console.log(`fetchEvents(${purchaseStartBlockHeight.toString()}): `, JSON.stringify(events));
+
+    it(`CHECK tx should succeed when purchase tokens by an non-existing user, but should fail when purchase by an existing user`, async () => {
+        console.log('===================[CHECK tx should succeed purchase tokens by an non-existing user] ===================')
+        let totalAmountInCirculation0 = zkApp.totalAmountInCirculation.get();
+        console.log('totalAmountInCirculation0: ', totalAmountInCirculation0.toString());
+        let memberTreeRoot0 = tokenMembersMerkleMap.getRoot();
+        console.log('memberTreeRoot0: ', memberTreeRoot0.toString());
+
+        let userPriKey = PrivateKey.random();
+        console.log(`create one user with PrivateKey: ${userPriKey.toBase58()},  PublicKey: ${userPriKey.toPublicKey().toBase58()}`);
+        await constructOneUserAndPurchase(userPriKey, maximumPurchasingAmount, (senderAccount0: PublicKey, userPriKey0: PrivateKey) => {
+            let accUpdt = AccountUpdate.fundNewAccount(senderAccount0, 2);
+            accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
+        });
+
+        expect(membershipZkApp.memberTreeRoot.get()).not.toEqual(memberTreeRoot0);
+        expect(membershipZkApp.memberTreeRoot.get()).toEqual(tokenMembersMerkleMap.getRoot());
+        expect(membershipZkApp.memberCount.get()).toEqual(UInt32.from(1));
+        expect(zkApp.totalAmountInCirculation.get()).toEqual(totalAmountInCirculation0.add(2));
+        console.log('===================[tx succeeds when purchase tokens by an non-existing user !!] ===================')
+
+        console.log('===================[CHECK tx should fail when purchase tokens by an existing user] ===================')
+        console.log('=======================the same user purchases tokens again=======================');
+        totalAmountInCirculation0 = zkApp.totalAmountInCirculation.get();
+        memberTreeRoot0 = membershipZkApp.memberTreeRoot.get();
+        let memberCount0 = membershipZkApp.memberCount.get();
+
+        // construct a tx and send
+        try {
+            await constructOneUserAndPurchase(userPriKey, maximumPurchasingAmount, (senderAccount0: PublicKey, userPriKey0: PrivateKey) => {
+                let accUpdt = AccountUpdate.fundNewAccount(senderAccount0);
+                accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
+            });
+        } catch (error) {
+            console.log('===================[As Expected, tx fails when purchase tokens by an existing user !!] ===================')
+            console.error(error);
+        }
+
+        expect(membershipZkApp.memberTreeRoot.get()).toEqual(memberTreeRoot0);// should equal
+        expect(membershipZkApp.memberCount.get()).toEqual(memberCount0);
+        expect(zkApp.totalAmountInCirculation.get()).toEqual(totalAmountInCirculation0);
     });
 
-    /* 
-        it(`CHECK tx should succeed when purchase tokens by an non-existing user, but should fail when purchase by an existing user`, async () => {
-            console.log('===================[CHECK tx should succeed purchase tokens by an non-existing user] ===================')
-            let totalAmountInCirculation0 = zkApp.totalAmountInCirculation.get();
-            console.log('totalAmountInCirculation0: ', totalAmountInCirculation0.toString());
-            let memberTreeRoot0 = tokenMembersMerkleMap.getRoot();
-            console.log('memberTreeRoot0: ', memberTreeRoot0.toString());
-    
-            let userPriKey = PrivateKey.random();
-            console.log(`create one user with PrivateKey: ${userPriKey.toBase58()},  PublicKey: ${userPriKey.toPublicKey().toBase58()}`);
-            await constructOneUserAndPurchase(userPriKey, maximumPurchasingAmount, (senderAccount0: PublicKey, userPriKey0: PrivateKey) => {
-                let accUpdt = AccountUpdate.fundNewAccount(senderAccount0, 2);
-                accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
-            });
-    
-            expect(membershipZkApp.memberTreeRoot.get()).not.toEqual(memberTreeRoot0);
-            expect(membershipZkApp.memberTreeRoot.get()).toEqual(tokenMembersMerkleMap.getRoot());
-            expect(membershipZkApp.memberCount.get()).toEqual(UInt32.from(1));
-            expect(zkApp.totalAmountInCirculation.get()).toEqual(totalAmountInCirculation0.add(2));
-            console.log('===================[tx succeeds when purchase tokens by an non-existing user !!] ===================')
-    
-            console.log('===================[CHECK tx should fail when purchase tokens by an existing user] ===================')
-            console.log('=======================the same user purchases tokens again=======================');
-            totalAmountInCirculation0 = zkApp.totalAmountInCirculation.get();
-            memberTreeRoot0 = membershipZkApp.memberTreeRoot.get();
-            let memberCount0 = membershipZkApp.memberCount.get();
-    
-            // construct a tx and send
-            try {
-                await constructOneUserAndPurchase(userPriKey, maximumPurchasingAmount, (senderAccount0: PublicKey, userPriKey0: PrivateKey) => {
-                    let accUpdt = AccountUpdate.fundNewAccount(senderAccount0);
-                    accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
-                });
-            } catch (error) {
-                console.log('===================[As Expected, tx fails when purchase tokens by an existing user !!] ===================')
-                console.error(error);
-            }
-    
-            expect(membershipZkApp.memberTreeRoot.get()).toEqual(memberTreeRoot0);// should equal
-            expect(membershipZkApp.memberCount.get()).toEqual(memberCount0);
-            expect(zkApp.totalAmountInCirculation.get()).toEqual(totalAmountInCirculation0);
-        }); */
 
-    /* 
-        it(`CHECK tx should fail when purchase tokens when EXCEEDING maximum purchasing amount AND CHECK tx should fail when purchase tokens with EXCEEDING precondition.network.blockchainLength`, async () => {
-            console.log('===================[CHECK tx should fail when purchase tokens when EXCEEDING maximum purchasing amount] ===================')
-            let totalAmountInCirculation0 = zkApp.totalAmountInCirculation.get();
-            console.log('totalAmountInCirculation0: ', totalAmountInCirculation0.toString());
-            let memberTreeRoot0 = membershipZkApp.memberTreeRoot.get();
-            console.log('memberTreeRoot0: ', memberTreeRoot0.toString());
-            let memberCount0 = membershipZkApp.memberCount.get();
-            console.log('memberCount0: ', memberCount0.toString());
-    
-            let userPriKey = PrivateKey.random();
-            try {
-                await constructOneUserAndPurchase(userPriKey, maximumPurchasingAmount.add(1), (senderAccount0: PublicKey, userPriKey0: PrivateKey) => {
-                    let accUpdt = AccountUpdate.fundNewAccount(senderAccount0, 2);
-                    accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
-                });
-            } catch (error) {
-                console.log('========== As Expected, tx fails when purchase tokens when EXCEEDING maximum purchasing amount ========== ');
-                console.error(error);
-            }
-    
-            expect(membershipZkApp.memberTreeRoot.get()).toEqual(memberTreeRoot0);
-            expect(membershipZkApp.memberCount.get()).toEqual(memberCount0);
-            expect(zkApp.totalAmountInCirculation.get()).toEqual(totalAmountInCirculation0);
-    
-    
-            console.log('===================[CHECK tx should fail when purchase tokens with EXCEEDING precondition.network.blockchainLength] ===================')
-            let totalAmountInCirculation00 = zkApp.totalAmountInCirculation.get();
-            console.log('totalAmountInCirculation00: ', totalAmountInCirculation00.toString());
-            let memberTreeRoot00 = membershipZkApp.memberTreeRoot.get();
-            console.log('memberTreeRoot00: ', memberTreeRoot00.toString());
-            let memberCount00 = membershipZkApp.memberCount.get();
-            console.log('memberCount00: ', memberCount00.toString());
-    
-            // wait for blockchainHeight
-            await waitBlockHeightToExceed(purchaseEndBlockHeight);
-    
-            let userPriKey00 = PrivateKey.random();
-            try {
-                await constructOneUserAndPurchase(userPriKey00, maximumPurchasingAmount, (senderAccount0: PublicKey, userPriKey0: PrivateKey) => {
-                    let accUpdt = AccountUpdate.fundNewAccount(senderAccount0, 2);
-                    accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
-                });
-            } catch (error) {
-                console.log('========== As Expected, tx fails when purchase tokens with EXCEEDING precondition.network.blockchainLength ========== ');
-                console.error(error);
-            }
-            expect(membershipZkApp.memberTreeRoot.get()).toEqual(memberTreeRoot00);
-            expect(membershipZkApp.memberCount.get()).toEqual(memberCount00);
-            expect(zkApp.totalAmountInCirculation.get()).toEqual(totalAmountInCirculation00);
-    
-        });
-    
-    
-        it(`CHECK tx should fail when purchase tokens when (totalAmountInCirculation + purchasingAmount) > SUPPLY `, async () => {
-            console.log('===================[CHECK tx should fail when purchase tokens when (totalAmountInCirculation + purchasingAmount) > SUPPLY ] ===================')
-    
-            console.log('========================firstUser starts========================');
-            let userPriKeyFirst = PrivateKey.random();
-            await constructOneUserAndPurchase(userPriKeyFirst, maximumPurchasingAmount, (senderAccount0: PublicKey, userPriKey0: PrivateKey) => {
+    it(`CHECK tx should fail when purchase tokens when EXCEEDING maximum purchasing amount AND CHECK tx should fail when purchase tokens with EXCEEDING precondition.network.blockchainLength`, async () => {
+        console.log('===================[CHECK tx should fail when purchase tokens when EXCEEDING maximum purchasing amount] ===================')
+        let totalAmountInCirculation0 = zkApp.totalAmountInCirculation.get();
+        console.log('totalAmountInCirculation0: ', totalAmountInCirculation0.toString());
+        let memberTreeRoot0 = membershipZkApp.memberTreeRoot.get();
+        console.log('memberTreeRoot0: ', memberTreeRoot0.toString());
+        let memberCount0 = membershipZkApp.memberCount.get();
+        console.log('memberCount0: ', memberCount0.toString());
+
+        let userPriKey = PrivateKey.random();
+        try {
+            await constructOneUserAndPurchase(userPriKey, maximumPurchasingAmount.add(1), (senderAccount0: PublicKey, userPriKey0: PrivateKey) => {
                 let accUpdt = AccountUpdate.fundNewAccount(senderAccount0, 2);
                 accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
             });
-    
-            console.log('========================secUser starts========================');
-            let userPriKeySec = PrivateKey.random();
-            await constructOneUserAndPurchase(userPriKeySec, maximumPurchasingAmount, (senderAccount0: PublicKey, userPriKey0: PrivateKey) => {
+        } catch (error) {
+            console.log('========== As Expected, tx fails when purchase tokens when EXCEEDING maximum purchasing amount ========== ');
+            console.error(error);
+        }
+
+        expect(membershipZkApp.memberTreeRoot.get()).toEqual(memberTreeRoot0);
+        expect(membershipZkApp.memberCount.get()).toEqual(memberCount0);
+        expect(zkApp.totalAmountInCirculation.get()).toEqual(totalAmountInCirculation0);
+
+
+        console.log('===================[CHECK tx should fail when purchase tokens with EXCEEDING precondition.network.blockchainLength] ===================')
+        let totalAmountInCirculation00 = zkApp.totalAmountInCirculation.get();
+        console.log('totalAmountInCirculation00: ', totalAmountInCirculation00.toString());
+        let memberTreeRoot00 = membershipZkApp.memberTreeRoot.get();
+        console.log('memberTreeRoot00: ', memberTreeRoot00.toString());
+        let memberCount00 = membershipZkApp.memberCount.get();
+        console.log('memberCount00: ', memberCount00.toString());
+
+        // wait for blockchainHeight
+        await waitBlockHeightToExceed(purchaseEndBlockHeight, isLocalBlockChain);
+
+        let userPriKey00 = PrivateKey.random();
+        try {
+            await constructOneUserAndPurchase(userPriKey00, maximumPurchasingAmount, (senderAccount0: PublicKey, userPriKey0: PrivateKey) => {
                 let accUpdt = AccountUpdate.fundNewAccount(senderAccount0, 2);
                 accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
             });
-    
-            console.log('========================thirdUser starts========================');
-            console.log('=========purchase tokens when (totalAmountInCirculation + purchasingAmount) > SUPPLY, (should FAIL)=========');
-            let totalAmountInCirculation0 = zkApp.totalAmountInCirculation.get();
-            console.log('totalAmountInCirculation0: ', totalAmountInCirculation0.toString());
-            let memberTreeRoot0 = membershipZkApp.memberTreeRoot.get();
-            console.log('memberTreeRoot0: ', memberTreeRoot0.toString());
-            let memberCount0 = membershipZkApp.memberCount.get();
-            console.log('memberCount0: ', memberCount0.toString());
-    
-            let userPriKeyThird = PrivateKey.random();
-            try {
-                await constructOneUserAndPurchase(userPriKeyThird, maximumPurchasingAmount.add(1), (senderAccount0: PublicKey, userPriKey0: PrivateKey) => {
-                    let accUpdt = AccountUpdate.fundNewAccount(senderAccount0, 2);
-                    accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
-                });
-            } catch (error) {
-                console.log('=========purchase tokens when (totalAmountInCirculation + purchasingAmount) > SUPPLY, As Expected, tx FAIL!)=========');
-                console.error(error);
-            }
-            expect(membershipZkApp.memberTreeRoot.get()).toEqual(memberTreeRoot0);
-            expect(membershipZkApp.memberCount.get()).toEqual(memberCount0);
-            expect(zkApp.totalAmountInCirculation.get()).toEqual(totalAmountInCirculation0);
+        } catch (error) {
+            console.log('========== As Expected, tx fails when purchase tokens with EXCEEDING precondition.network.blockchainLength ========== ');
+            console.error(error);
+        }
+        expect(membershipZkApp.memberTreeRoot.get()).toEqual(memberTreeRoot00);
+        expect(membershipZkApp.memberCount.get()).toEqual(memberCount00);
+        expect(zkApp.totalAmountInCirculation.get()).toEqual(totalAmountInCirculation00);
+
+    });
+
+
+    it(`CHECK tx should fail when purchase tokens when (totalAmountInCirculation + purchasingAmount) > SUPPLY `, async () => {
+        console.log('===================[CHECK tx should fail when purchase tokens when (totalAmountInCirculation + purchasingAmount) > SUPPLY ] ===================')
+
+        console.log('========================firstUser starts========================');
+        let userPriKeyFirst = PrivateKey.random();
+        await constructOneUserAndPurchase(userPriKeyFirst, maximumPurchasingAmount, (senderAccount0: PublicKey, userPriKey0: PrivateKey) => {
+            let accUpdt = AccountUpdate.fundNewAccount(senderAccount0, 2);
+            accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
         });
-     */
-/* 
+
+        console.log('========================secUser starts========================');
+        let userPriKeySec = PrivateKey.random();
+        await constructOneUserAndPurchase(userPriKeySec, maximumPurchasingAmount, (senderAccount0: PublicKey, userPriKey0: PrivateKey) => {
+            let accUpdt = AccountUpdate.fundNewAccount(senderAccount0, 2);
+            accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
+        });
+
+        console.log('========================thirdUser starts========================');
+        console.log('=========purchase tokens when (totalAmountInCirculation + purchasingAmount) > SUPPLY, (should FAIL)=========');
+        let totalAmountInCirculation0 = zkApp.totalAmountInCirculation.get();
+        console.log('totalAmountInCirculation0: ', totalAmountInCirculation0.toString());
+        let memberTreeRoot0 = membershipZkApp.memberTreeRoot.get();
+        console.log('memberTreeRoot0: ', memberTreeRoot0.toString());
+        let memberCount0 = membershipZkApp.memberCount.get();
+        console.log('memberCount0: ', memberCount0.toString());
+
+        let userPriKeyThird = PrivateKey.random();
+        try {
+            await constructOneUserAndPurchase(userPriKeyThird, maximumPurchasingAmount.add(1), (senderAccount0: PublicKey, userPriKey0: PrivateKey) => {
+                let accUpdt = AccountUpdate.fundNewAccount(senderAccount0, 2);
+                accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 3 * 1e9 });
+            });
+        } catch (error) {
+            console.log('=========purchase tokens when (totalAmountInCirculation + purchasingAmount) > SUPPLY, As Expected, tx FAIL!)=========');
+            console.error(error);
+        }
+        expect(membershipZkApp.memberTreeRoot.get()).toEqual(memberTreeRoot0);
+        expect(membershipZkApp.memberCount.get()).toEqual(memberCount0);
+        expect(zkApp.totalAmountInCirculation.get()).toEqual(totalAmountInCirculation0);
+    });
+
+
     it(`CHECK if (timing-lock Mina balance when totalAmountInCirculation == SUPPLY) AND (Mina of 'cliffAmount' can be transferred after 'cliffTime')`, async () => {
         console.log('===================[CHECK if timing-lock Mina balance when totalAmountInCirculation == SUPPLY]===================');
 
@@ -498,7 +419,7 @@ describe('test fuctions inside XTokenContract', () => {
         });
 
         // wait for blocks grow...
-        await waitBlockHeightToExceed(purchaseEndBlockHeight);
+        await waitBlockHeightToExceed(purchaseEndBlockHeight, isLocalBlockChain);
 
         let balanceAfter3Purchases = zkApp.account.balance.get();
 
@@ -507,7 +428,7 @@ describe('test fuctions inside XTokenContract', () => {
         expect(zkAppAcctInfo?.timing.cliffAmount).toEqual(UInt64.from('200000000'));
         expect(zkAppAcctInfo?.timing.vestingIncrement).toEqual(UInt64.from('200000000'));
     });
- */
+
 
     it(`CHECK if one can ONLY vote for ONE time To Process Rest Tokens AND rollup VoteNotes by reducing Actions`, async () => {
         console.log('===================[CHECK if one can ONLY vote for ONE time To Process Rest Tokens AND then rollup VoteNotes by reducing Actions]===================');
@@ -533,19 +454,21 @@ describe('test fuctions inside XTokenContract', () => {
                 tx.sign([userPriKeyFirst]);
             },
             async getState() {
-                    // get the length of actions list, and compare later to confirm the tx is done!
-                    let actionsList = await syncActions(zkAppAddress);
-                    console.log(`Obtaining actions of ${zkAppAddress.toBase58()}: `, JSON.stringify(actionsList));
-                    if (actionsList?.length == 0) {
-                        await waitBlockHeightToExceed((await syncNetworkStatus()).blockchainLength.add(1));
-                    }
-    
-                    return actionsList!.length;            
-                },
+                console.log('firstUser votes........sususu');
+
+                // get the length of actions list, and compare later to confirm the tx is done!
+                let actionsList = await syncActions(zkAppAddress, isLocalBlockChain);
+                console.log(`Obtaining actions of ${zkAppAddress.toBase58()}: `, JSON.stringify(actionsList));
+                if (actionsList?.length == 0) {
+                    await waitBlockHeightToExceed((await syncNetworkStatus(isLocalBlockChain)).blockchainLength.add(1), isLocalBlockChain);
+                }
+
+                return actionsList!.length;
+            },
             statesEqual(state1, state2) {
                 return state2 == state1;
             },
-            isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
+            isLocalBlockChain
         });
 
         console.log('===================[CHECK if one can ONLY vote for ONE time To Process Rest Tokens]===================');
@@ -567,10 +490,10 @@ describe('test fuctions inside XTokenContract', () => {
                 },
                 async getState() {
                     // get the length of actions list, and compare later to confirm the tx is done!
-                    let actionsList = await syncActions(zkAppAddress);
+                    let actionsList = await syncActions(zkAppAddress, isLocalBlockChain);
                     console.log(`Obtaining actions of ${zkAppAddress.toBase58()}: `, JSON.stringify(actionsList));
                     if (actionsList?.length == 0) {
-                        await waitBlockHeightToExceed((await syncNetworkStatus()).blockchainLength.add(1));
+                        await waitBlockHeightToExceed((await syncNetworkStatus(isLocalBlockChain)).blockchainLength.add(1), isLocalBlockChain);
                     }
 
                     return actionsList!.length;
@@ -578,13 +501,14 @@ describe('test fuctions inside XTokenContract', () => {
                 statesEqual(state1, state2) {
                     return state2 == state1;
                 },
-                isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
+                isLocalBlockChain
             });
         } catch (error) {
             console.log('========== the firstUser vote again, and As Expected, tx failed!!! ==========')
             console.error(error);
         }
-        console.log('ZkAppAcctInfo: ', JSON.stringify(await syncAcctInfo(zkAppAddress)));
+        zkAppAcctInfo = await syncAcctInfo(zkAppAddress, Field(1), isLocalBlockChain);
+        console.log('ZkAppAcctInfo: ', JSON.stringify(zkAppAcctInfo));
         expect(zkApp.reducer.getActions({ fromActionHash: Reducer.initialActionsHash }).length).toEqual(pendingActions1.length);
 
         console.log('========================secUser starts========================');
@@ -610,10 +534,10 @@ describe('test fuctions inside XTokenContract', () => {
             },
             async getState() {
                 // get the length of actions list, and compare later to confirm the tx is done!
-                let actionsList = await syncActions(zkAppAddress);
+                let actionsList = await syncActions(zkAppAddress, isLocalBlockChain);
                 console.log(`Obtaining actions of ${zkAppAddress.toBase58()}: `, JSON.stringify(actionsList));
                 if (actionsList?.length == 0) {
-                    await waitBlockHeightToExceed((await syncNetworkStatus()).blockchainLength.add(1));
+                    await waitBlockHeightToExceed((await syncNetworkStatus(isLocalBlockChain)).blockchainLength.add(1), isLocalBlockChain);
                 }
 
                 return actionsList!.length;
@@ -621,7 +545,7 @@ describe('test fuctions inside XTokenContract', () => {
             statesEqual(state1, state2) {
                 return state2 == state1;
             },
-            isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
+            isLocalBlockChain
         });
 
 
@@ -635,10 +559,11 @@ describe('test fuctions inside XTokenContract', () => {
 
         console.log('===================[CHECK rollup actions WITHOUT all members\' votes ( tx should fail )]===================');
         // wait for blockheight grows
-        await waitBlockHeightToExceed(purchaseEndBlockHeight);
+        await waitBlockHeightToExceed(purchaseEndBlockHeight, isLocalBlockChain);
 
-        console.log('ZkAppAcctInfo: ', JSON.stringify(await syncAcctInfo(zkAppAddress)));
-        await syncAcctInfo(senderAccount);
+        zkAppAcctInfo = await syncAcctInfo(zkAppAddress, Field(1), isLocalBlockChain);
+        console.log('ZkAppAcctInfo: ', JSON.stringify(zkAppAcctInfo));
+        senderAcctInfo = await syncAcctInfo(senderAccount, Field(1), isLocalBlockChain);
 
         let actionHashVote0 = zkApp.actionHashVote.get();
         try {
@@ -658,13 +583,14 @@ describe('test fuctions inside XTokenContract', () => {
                 statesEqual(state1, state2) {
                     return false;
                 },
-                isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
+                isLocalBlockChain
             });
         } catch (error) {
             console.log('========== rollup actions WITHOUT all members\' votes, and As Expected, tx failed!!! ==========')
             console.error(error);
         }
-        console.log('ZkAppAcctInfo: ', JSON.stringify(await syncAcctInfo(zkAppAddress)));
+        zkAppAcctInfo = await syncAcctInfo(zkAppAddress, Field(1), isLocalBlockChain);
+        console.log('ZkAppAcctInfo: ', JSON.stringify(zkAppAcctInfo));
         expect(zkApp.actionHashVote.get()).toEqual(actionHashVote0);
 
         console.log('     =================thirdUser votes===================     ');
@@ -683,10 +609,10 @@ describe('test fuctions inside XTokenContract', () => {
             },
             async getState() {
                 // get the length of actions list, and compare later to confirm the tx is done!
-                let actionsList = await syncActions(zkAppAddress);
+                let actionsList = await syncActions(zkAppAddress, isLocalBlockChain);
                 console.log(`Obtaining actions of ${zkAppAddress.toBase58()}: `, JSON.stringify(actionsList));
                 if (actionsList?.length == 0) {
-                    await waitBlockHeightToExceed((await syncNetworkStatus()).blockchainLength.add(1));
+                    await waitBlockHeightToExceed((await syncNetworkStatus(isLocalBlockChain)).blockchainLength.add(1), isLocalBlockChain);
                 }
 
                 return actionsList!.length;
@@ -694,14 +620,16 @@ describe('test fuctions inside XTokenContract', () => {
             statesEqual(state1, state2) {
                 return state2 == state1;
             },
-            isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
+            isLocalBlockChain
         });
-        console.log('ZkAppAcctInfo: ', JSON.stringify(await syncAcctInfo(zkAppAddress)));
+        zkAppAcctInfo = await syncAcctInfo(zkAppAddress, Field(1), isLocalBlockChain);
+        console.log('ZkAppAcctInfo: ', JSON.stringify(zkAppAcctInfo));
 
         // wait for blockheight grows
-        await waitBlockHeightToExceed(purchaseEndBlockHeight);
+        await waitBlockHeightToExceed(purchaseEndBlockHeight, isLocalBlockChain);
 
-        await syncActions(zkApp.address);
+        await syncActions(zkApp.address, isLocalBlockChain);
+
         let actionHashVote01 = zkApp.actionHashVote.get();
         await makeAndSendTransaction({
             feePayerPublicKey: senderAccount,
@@ -714,20 +642,21 @@ describe('test fuctions inside XTokenContract', () => {
                 tx.sign([senderKey]);
             },
             async getState() {
-                console.log('ZkAppAcctInfo: ', JSON.stringify(await syncAcctInfo(zkAppAddress)));
+                zkAppAcctInfo = await syncAcctInfo(zkAppAddress, Field(1), isLocalBlockChain);
+                console.log('ZkAppAcctInfo: ', JSON.stringify(zkAppAcctInfo));
                 return zkApp.actionHashVote.get().toString();
             },
             statesEqual(state1, state2) {
                 return state2 == state1;
             },
-            isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
+            isLocalBlockChain
         });
 
         expect(zkApp.actionHashVote.get()).not.toEqual(actionHashVote01);
     });
 
 
-/* ======successful locally, but 'Some commands have an insufficient fee' on Berkeley
+    // ======successful locally, but 'Some commands have an insufficient fee' on Berkeley
     it(`CHECK transfer custom tokens with proof authorization`, async () => {
         console.log('===================[CHECK transfer custom tokens with proof authorization]===================');
 
@@ -762,7 +691,9 @@ describe('test fuctions inside XTokenContract', () => {
             tokenId,
             eachTimeNotExist() {
                 console.log('loop&wait for two NormalTokenUser contracts to deploy...');
-            }, isZkAppAccount: true, isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
+            },
+            isZkAppAccount: true,
+            isLocalBlockChain
         });
 
         // user purchase token
@@ -801,30 +732,31 @@ describe('test fuctions inside XTokenContract', () => {
         expect(Mina.getBalance(userPubKey1, tokenId).value.toBigInt()).toEqual(3n);
     })
 
-    /*
-        it('CHECK \'Delegate\' cannot be set by Signature auth', async () => {
-            console.log('===================[CHECK \'Delegate\' cannot be set by Signature auth]===================');
-            let delegate0 = zkApp.account.delegate.get();
-            console.log('delegate0: ', delegate0.toBase58());
-            try {
-                let tx = await Mina.transaction(senderAccount, () => {
-                    let onePriKey = PrivateKey.random();
-                    let onePublicKey = onePriKey.toPublicKey();
-                    zkApp.account.delegate.set(onePublicKey);
-                });
-                tx.sign([senderKey, zkAppPrivateKey]);
-                let txId = await tx.send();
-                console.log('txId.isSuccess', txId.isSuccess);
-                txId.wait({ maxAttempts: 1000 });
-                console.log('delegate1: ', zkApp.account.delegate.get().toBase58());
-    
-            } catch (error) {
-                console.log('========== As Expected, tx failed, \'Delegate\' cannot be set by Signature auth ==========');
-                console.error(error);
-            }
-            expect(zkApp.account.delegate.get()).toEqual(delegate0);
-        });
-    */
+
+
+    it('CHECK \'Delegate\' cannot be set by Signature auth', async () => {
+        console.log('===================[CHECK \'Delegate\' cannot be set by Signature auth]===================');
+        let delegate0 = zkApp.account.delegate.get();
+        console.log('delegate0: ', delegate0.toBase58());
+        try {
+            let tx = await Mina.transaction(senderAccount, () => {
+                let onePriKey = PrivateKey.random();
+                let onePublicKey = onePriKey.toPublicKey();
+                zkApp.account.delegate.set(onePublicKey);
+            });
+            tx.sign([senderKey, zkAppPrivateKey]);
+            let txId = await tx.send();
+            console.log('txId.isSuccess', txId.isSuccess);
+            txId.wait({ maxAttempts: 1000 });
+            console.log('delegate1: ', zkApp.account.delegate.get().toBase58());
+
+        } catch (error) {
+            console.log('========== As Expected, tx failed, \'Delegate\' cannot be set by Signature auth ==========');
+            console.error(error);
+        }
+        expect(zkApp.account.delegate.get()).toEqual(delegate0);
+    });
+
 
     it('CHECK \'Burn\' custom token', async () => {
         console.log('===================[CHECK \'Burn\' custom token]===================');
@@ -854,7 +786,8 @@ describe('test fuctions inside XTokenContract', () => {
             let tx0 = await Mina.transaction(senderAccount, () => {
                 zkApp.burnTokens(userPriKeySec.toPublicKey(), UInt64.from(1));
             });
-            tx0.sign([senderKey, zkAppPrivateKey]);
+            await tx0.prove();
+            tx0.sign([senderKey, userPriKeySec]);
             let txId0 = await tx0.send();
             console.log('txId.isSuccess', txId0.isSuccess);
             txId0.wait({ maxAttempts: 1000 });
@@ -874,7 +807,8 @@ describe('test fuctions inside XTokenContract', () => {
         let tx01 = await Mina.transaction(senderAccount, () => {
             zkApp.burnTokens(userPriKeySec.toPublicKey(), UInt64.from(1));
         });
-        tx01.sign([senderKey, zkAppPrivateKey]);
+        await tx01.prove();
+        tx01.sign([senderKey, userPriKeySec]);
         let txId01 = await tx01.send();
         console.log('txId01.isSuccess', txId01.isSuccess);
         txId01.wait({ maxAttempts: 1000 });
