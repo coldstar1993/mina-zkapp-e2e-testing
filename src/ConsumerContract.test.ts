@@ -82,15 +82,10 @@ describe('test fuctions inside ConsumerContract', () => {
     beforeAll(async () => {
         await isReady;
 
-        let tmp1 = PrivateKey.random();
-        console.log('sample - Membership\'s privateKey: ', tmp1.toBase58(), 'pubKey: ', tmp1.toPublicKey().toBase58());
-        let tmp0 = PrivateKey.random();
-        console.log('sample - XTokenContract\'s privateKey: ', tmp0.toBase58(), 'pubKey: ', tmp0.toPublicKey().toBase58());
-
-        Blockchain = isLocalBlockChain? Mina.LocalBlockchain({ proofsEnabled: false }):  Mina.Network({
+        Blockchain = isLocalBlockChain ? Mina.LocalBlockchain({ proofsEnabled: true }) : Mina.Network({
             mina: 'https://proxy.berkeley.minaexplorer.com/graphql',
             archive: 'https://archive.berkeley.minaexplorer.com/',
-        }) ;
+        });
         Mina.setActiveInstance(Blockchain);
 
         membershipVerificationKey = (await Membership.compile()).verificationKey;
@@ -104,7 +99,7 @@ describe('test fuctions inside ConsumerContract', () => {
     });
 
     afterAll(() => {
-        setInterval(shutdown, 0);
+        // setInterval(shutdown, 0);
     });
 
     beforeEach(async () => {
@@ -285,16 +280,16 @@ describe('test fuctions inside ConsumerContract', () => {
 
         // wait for blockheight grows
         // await waitBlockHeightToExceed(purchaseEndBlockHeight);
-
+        console.log('============== the user purchses token done ==============');
         await makeAndSendTransaction({
             feePayerPublicKey: senderKey.toPublicKey(),
             zkAppAddress,
             mutateZkApp() {
+                AccountUpdate.fundNewAccount(senderAccount);
                 consumerContract.consume(userPubKeyFirst);
             },
             transactionFee,
             signTx(tx: Mina.Transaction) {
-                AccountUpdate.fundNewAccount(senderAccount);
                 tx.sign([senderKey, userPriKeyFirst]);
             },
             getState() {
