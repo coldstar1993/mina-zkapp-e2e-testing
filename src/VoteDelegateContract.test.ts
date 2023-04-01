@@ -3,10 +3,10 @@ import { XTokenContract } from './XTokenContract.js';
 import { Membership } from './Membership.js';
 import { VoteZkProgram, VoteState } from "./vote.js";
 import { VoteDelegateContract } from './VoteDelegateContract.js';
-import { loopUntilAccountExists, makeAndSendTransaction } from './utils.js';
+import { loopUntilAccountExists, makeAndSendTransaction, syncNetworkStatus, syncAcctInfo, syncActions, waitBlockHeightToExceed } from './utils.js';
 
 describe('test fuctions inside VoteDelegateContract', () => {
-    let needDeployContractEachTime = true;
+    let isLocalBlockChain = !(process.env.TEST_ON_BERKELEY! == 'true');
 
     let Blockchain: any;
     let transactionFee = 100_000_000;
@@ -41,53 +41,11 @@ describe('test fuctions inside VoteDelegateContract', () => {
     let newDelegateTargetKey: PrivateKey;
     let newDelegateTargetAddress: PublicKey;
 
-    async function syncNetworkStatus() {
-        if (process.env.TEST_ON_BERKELEY! == 'true') {
-            await fetchLastBlock();
-            console.log('sync Berkeley Network status: done!');
-        }
-        console.log('current network state: ', JSON.stringify(Mina.activeInstance.getNetworkState()));
-        return Mina.activeInstance.getNetworkState();
-    }
-
-    async function syncAcctInfo(acctAddr: PublicKey) {
-        let acctInfo: Types.Account | undefined;
-        if (process.env.TEST_ON_BERKELEY! == 'true') {
-            acctInfo = (await fetchAccount({ publicKey: acctAddr })).account!;
-        } else {
-            acctInfo = Mina.activeInstance.getAccount(acctAddr);
-        }
-
-        return acctInfo;
-    }
-
     async function syncAllAccountInfo() {
-        console.log('current senderAcctInfo: ', JSON.stringify(await syncAcctInfo(senderAccount)));
-        console.log('current membershipAcctInfo: ', JSON.stringify(await syncAcctInfo(membershipZkAppAddress)));
-        console.log('current zkAppAcctInfo: ', JSON.stringify(await syncAcctInfo(zkAppAddress)));
-        console.log('current voteDelegateContractAcctInfo: ', JSON.stringify(await syncAcctInfo(voteDelegateContractAddress)));
-    }
-
-    async function waitBlockHeightToExceed(aHeight: UInt32) {
-        if (process.env.TEST_ON_BERKELEY! == 'true') {
-            // wait for Berkeley's blockchainLength > aHeight
-            while (true) {
-                let blockchainLength = (await syncNetworkStatus()).blockchainLength;
-                console.log(`aHeight: ${aHeight.toString()}, current blockchainLength: ${blockchainLength.toString()}`);
-
-                if (aHeight.lessThan(blockchainLength).toBoolean()) {
-                    break;
-                }
-
-                let blockGap = Number.parseInt(aHeight.sub(blockchainLength).toString());
-                blockGap = blockGap == 0 ? 1 : blockGap;
-                await new Promise((resolve) => setTimeout(resolve, blockGap * 3 * 60 * 1000));// about 3 minutes/block
-            }
-        } else {
-            Blockchain.setBlockchainLength(aHeight.add(1));
-            console.log(`aHeight: ${aHeight.toString()}, current blockchainLength: ${Mina.activeInstance.getNetworkState().blockchainLength.toString()}`);
-        }
-        console.log('current network state: ', JSON.stringify(Mina.activeInstance.getNetworkState()));
+        console.log('current senderAcctInfo: ', JSON.stringify(await syncAcctInfo(senderAccount, Field(1), isLocalBlockChain)));
+        console.log('current membershipAcctInfo: ', JSON.stringify(await syncAcctInfo(membershipZkAppAddress, Field(1), isLocalBlockChain)));
+        console.log('current zkAppAcctInfo: ', JSON.stringify(await syncAcctInfo(zkAppAddress, Field(1), isLocalBlockChain)));
+        console.log('current voteDelegateContractAcctInfo: ', JSON.stringify(await syncAcctInfo(voteDelegateContractAddress, Field(1), isLocalBlockChain)));
     }
 
     const constructOneUserAndPurchase = async (userPriKey: PrivateKey, purchaseAmount0: UInt64, prePurchaseCallback: any) => {
@@ -121,7 +79,7 @@ describe('test fuctions inside VoteDelegateContract', () => {
             statesEqual(state1, state2) {
                 return state2.equals(state1).toBoolean();
             },
-            isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
+            isLocalBlockChain
 
         });
         // store the user
@@ -158,7 +116,7 @@ describe('test fuctions inside VoteDelegateContract', () => {
     });
 
     beforeEach(async () => {
-        await syncNetworkStatus();
+        await syncNetworkStatus(isLocalBlockChain);
 
         if (process.env.TEST_ON_BERKELEY! == 'true') {// Berkeley
             senderKey = PrivateKey.random();
@@ -171,7 +129,7 @@ describe('test fuctions inside VoteDelegateContract', () => {
                 tokenId: Field(1),// MINA
                 eachTimeNotExist: () => { console.log('[await loopUntilAccountExists] senderAccount is still not exiting, loop&wait...'); },
                 isZkAppAccount: false,
-                isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
+                isLocalBlockChain
             });
             console.log('senderAccount is funded!');
 
@@ -180,20 +138,20 @@ describe('test fuctions inside VoteDelegateContract', () => {
         }
 
         console.log(`senderKey: ${senderKey.toBase58()}, senderAccount: ${senderAccount.toBase58()}`);
-        let { nonce, balance } = await syncAcctInfo(senderAccount);
+        let { nonce, balance } = await syncAcctInfo(senderAccount, Field(1), isLocalBlockChain);
         console.log(`initially, senderAccount.nonce: ${nonce}, senderAccount.balance: ${balance}`);
 
-        membershipZkAppPrivateKey = needDeployContractEachTime ? PrivateKey.random() : PrivateKey.fromBase58('EKFRWWuziCMDCoTqzhsaYBeRPDt2tKbPEYwCLgecfsYgUPnaJfji');
+        membershipZkAppPrivateKey = PrivateKey.random();
         membershipZkAppAddress = membershipZkAppPrivateKey.toPublicKey();
         membershipZkApp = new Membership(membershipZkAppAddress);
         console.log('membershipZkApp\'s PrivateKey: ', membershipZkAppPrivateKey.toBase58(), ' ,  membershipZkApp\'s Address: ', membershipZkAppAddress.toBase58());
 
-        zkAppPrivateKey = needDeployContractEachTime ? PrivateKey.random() : PrivateKey.fromBase58('EKEHu59a3GUam6rhuVUaA5wXeunJ1mmxgPVZABCj3ix1hVaXgJZK');
+        zkAppPrivateKey = PrivateKey.random();
         zkAppAddress = zkAppPrivateKey.toPublicKey();
         zkApp = new XTokenContract(zkAppAddress);
         console.log('xTokenContractZkApp\'s PrivateKey: ', zkAppPrivateKey.toBase58(), ' , xTokenContractZkApp\'s Address: ', zkAppAddress.toBase58());
 
-        voteDelegateContractPrivateKey = needDeployContractEachTime ? PrivateKey.random() : PrivateKey.fromBase58('');
+        voteDelegateContractPrivateKey = PrivateKey.random();
         voteDelegateContractAddress = voteDelegateContractPrivateKey.toPublicKey();
         voteDelegateContract = new VoteDelegateContract(voteDelegateContractAddress);
         console.log('voteDelegateContract\'s PrivateKey: ', voteDelegateContractPrivateKey.toBase58(), ' , voteDelegateContract\'s Address: ', voteDelegateContractAddress.toBase58());
@@ -209,64 +167,61 @@ describe('test fuctions inside VoteDelegateContract', () => {
         console.log('newDelegateTarget\'s PrivateKey: ', voteDelegateContractPrivateKey.toBase58(), ' , newDelegateTarget\'s Address: ', newDelegateTargetAddress.toBase58());
 
         // TODO to confirm if need deploy token each time
-        if (needDeployContractEachTime) {
-            console.log(`Membership Contract: deploying...`);
-            let tx_deployMembership = await Mina.transaction({ sender: senderAccount, fee: transactionFee }, () => {
-                AccountUpdate.fundNewAccount(senderAccount);
-                membershipZkApp.deploy({ zkappKey: membershipZkAppPrivateKey, verificationKey: membershipVerificationKey });
-            });
-            let txId_deployMembership = await tx_deployMembership.sign([senderKey]).send();
-            console.log(`Membership Contract: deployment tx[${txId_deployMembership.hash()!}] sent...`);
-            await txId_deployMembership.wait({ maxAttempts: 1000 });
-            console.log(`Membership Contract: txId.isSuccess:`, txId_deployMembership.isSuccess);
+        console.log(`Membership Contract: deploying...`);
+        let tx_deployMembership = await Mina.transaction({ sender: senderAccount, fee: transactionFee }, () => {
+            AccountUpdate.fundNewAccount(senderAccount);
+            membershipZkApp.deploy({ zkappKey: membershipZkAppPrivateKey, verificationKey: membershipVerificationKey });
+        });
+        let txId_deployMembership = await tx_deployMembership.sign([senderKey]).send();
+        console.log(`Membership Contract: deployment tx[${txId_deployMembership.hash()!}] sent...`);
+        await txId_deployMembership.wait({ maxAttempts: 1000 });
+        console.log(`Membership Contract: txId.isSuccess:`, txId_deployMembership.isSuccess);
 
-            // loop to wait for membership contract to deploy done!
-            await loopUntilAccountExists({
-                address: membershipZkAppAddress, eachTimeNotExist() {
-                    console.log('loop&wait for membership contract to deploy...');
-                }, isZkAppAccount: true, isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
-            });
-            console.log(`Membership Contract: deployment done!`);
+        // loop to wait for membership contract to deploy done!
+        await loopUntilAccountExists({
+            address: membershipZkAppAddress, eachTimeNotExist() {
+                console.log('loop&wait for membership contract to deploy...');
+            }, isZkAppAccount: true, isLocalBlockChain
+        });
+        console.log(`Membership Contract: deployment done!`);
 
-            console.log(`XTokenContract: deploying...`);
-            // deploy zkApp
-            let tx_deployXTokenContract = await Mina.transaction({ sender: senderAccount, fee: transactionFee }, () => {
-                AccountUpdate.fundNewAccount(senderAccount);
-                zkApp.deploy({ zkappKey: zkAppPrivateKey, verificationKey: zkAppVerificationKey });
-            });
-            let txId_deployXTokenContract = await tx_deployXTokenContract.sign([senderKey]).send();
-            console.log(`XTokenContract: deployment tx[${txId_deployXTokenContract.hash()!}] sent...`);
-            await txId_deployXTokenContract.wait({ maxAttempts: 1000 });
-            console.log(`xTokenContract: txId.isSuccess:`, txId_deployXTokenContract.isSuccess);
+        console.log(`XTokenContract: deploying...`);
+        // deploy zkApp
+        let tx_deployXTokenContract = await Mina.transaction({ sender: senderAccount, fee: transactionFee }, () => {
+            AccountUpdate.fundNewAccount(senderAccount);
+            zkApp.deploy({ zkappKey: zkAppPrivateKey, verificationKey: zkAppVerificationKey });
+        });
+        let txId_deployXTokenContract = await tx_deployXTokenContract.sign([senderKey]).send();
+        console.log(`XTokenContract: deployment tx[${txId_deployXTokenContract.hash()!}] sent...`);
+        await txId_deployXTokenContract.wait({ maxAttempts: 1000 });
+        console.log(`xTokenContract: txId.isSuccess:`, txId_deployXTokenContract.isSuccess);
 
-            // loop to wait for XTokenContract contract to deploy done!
-            await loopUntilAccountExists({
-                address: zkAppAddress, eachTimeNotExist() {
-                    console.log('loop&wait for XTokenContract to deploy...');
-                }, isZkAppAccount: true, isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
-            });
-            console.log(`xTokenContract: deployment done!`);
+        // loop to wait for XTokenContract contract to deploy done!
+        await loopUntilAccountExists({
+            address: zkAppAddress, eachTimeNotExist() {
+                console.log('loop&wait for XTokenContract to deploy...');
+            }, isZkAppAccount: true, isLocalBlockChain
+        });
+        console.log(`xTokenContract: deployment done!`);
 
-            console.log(`VoteDelegateContract: deploying...`);
-            // deploy VoteDelegateContract
-            let tx_deployVoteDelegateContract = await Mina.transaction({ sender: senderAccount, fee: transactionFee }, () => {
-                AccountUpdate.fundNewAccount(senderAccount);
-                voteDelegateContract.deploy({ zkappKey: voteDelegateContractPrivateKey, verificationKey: voteDelegateContractVerificationKey });
-            });
-            let txId_deployVoteDelegateContract = await tx_deployVoteDelegateContract.sign([senderKey]).send();
-            console.log(`VoteDelegateContract: deployment tx[${txId_deployVoteDelegateContract.hash()!}] sent...`);
-            await txId_deployVoteDelegateContract.wait({ maxAttempts: 1000 });
-            console.log(`voteDelegateContract: txId.isSuccess:`, txId_deployVoteDelegateContract.isSuccess);
+        console.log(`VoteDelegateContract: deploying...`);
+        // deploy VoteDelegateContract
+        let tx_deployVoteDelegateContract = await Mina.transaction({ sender: senderAccount, fee: transactionFee }, () => {
+            AccountUpdate.fundNewAccount(senderAccount);
+            voteDelegateContract.deploy({ zkappKey: voteDelegateContractPrivateKey, verificationKey: voteDelegateContractVerificationKey });
+        });
+        let txId_deployVoteDelegateContract = await tx_deployVoteDelegateContract.sign([senderKey]).send();
+        console.log(`VoteDelegateContract: deployment tx[${txId_deployVoteDelegateContract.hash()!}] sent...`);
+        await txId_deployVoteDelegateContract.wait({ maxAttempts: 1000 });
+        console.log(`voteDelegateContract: txId.isSuccess:`, txId_deployVoteDelegateContract.isSuccess);
 
-            // loop to wait for VoteDelegateContract to deploy done!
-            await loopUntilAccountExists({
-                address: voteDelegateContractAddress, eachTimeNotExist() {
-                    console.log('loop&wait for VoteDelegateContract to deploy...');
-                }, isZkAppAccount: true, isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
-            });
-            console.log(`VoteDelegateContract: deployment done!`);
-
-        }
+        // loop to wait for VoteDelegateContract to deploy done!
+        await loopUntilAccountExists({
+            address: voteDelegateContractAddress, eachTimeNotExist() {
+                console.log('loop&wait for VoteDelegateContract to deploy...');
+            }, isZkAppAccount: true, isLocalBlockChain
+        });
+        console.log(`VoteDelegateContract: deployment done!`);
 
         await syncAllAccountInfo();
 
@@ -278,7 +233,7 @@ describe('test fuctions inside VoteDelegateContract', () => {
         const voterNullifierMerkleMapRoot0 = voterNullifierMerkleMap.getRoot();
         console.log(`voterNullifierMerkleMap's initial root: ${voterNullifierMerkleMapRoot0.toString()}`);
 
-        await syncNetworkStatus();
+        await syncNetworkStatus(isLocalBlockChain);
 
         // initialize or reset XTokenContract & MembershipZkApp & VoteDelegateContract
         console.log(`trigger all contracts to initialize...`);
@@ -324,7 +279,7 @@ describe('test fuctions inside VoteDelegateContract', () => {
                 console.log('state1: ', state1, '  state2: ', state2);
                 return state2 == state1;
             },
-            isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
+            isLocalBlockChain
         });
 
         // fetch events to confirm         
@@ -333,8 +288,8 @@ describe('test fuctions inside VoteDelegateContract', () => {
         expect(events.filter((e) => {
             return e.type == 'init-delegate-target'
         })[0].event).toEqual(newDelegateTargetAddress);
-        console.log(`trigger voteDelegateContract.initOrReset(*): tx confirmed!`); 
-        
+        console.log(`trigger voteDelegateContract.initOrReset(*): tx confirmed!`);
+
         await syncAllAccountInfo();
 
         const tokenSymbol = Blockchain.getAccount(zkAppAddress).tokenSymbol;
@@ -371,11 +326,11 @@ describe('test fuctions inside VoteDelegateContract', () => {
         });
 
         // wait for blockheight grows
-        await waitBlockHeightToExceed(purchaseEndBlockHeight);
+        await waitBlockHeightToExceed(purchaseEndBlockHeight, isLocalBlockChain);
 
         console.log('======================== start recursively voting========================');
-        console.log('zkAppAcctInfo: ', JSON.stringify(await syncAcctInfo(zkAppAddress)));
-        console.log('voteDelegateContractAcctInfo: ', JSON.stringify(await syncAcctInfo(voteDelegateContractAddress)));
+        console.log('zkAppAcctInfo: ', JSON.stringify(await syncAcctInfo(zkAppAddress, Field(1), isLocalBlockChain)));
+        console.log('voteDelegateContractAcctInfo: ', JSON.stringify(await syncAcctInfo(voteDelegateContractAddress, Field(1), isLocalBlockChain)));
 
         let delegate0 = zkApp.account.delegate.get();
         console.log('original delegate address: ', delegate0.toBase58());
@@ -431,23 +386,23 @@ describe('test fuctions inside VoteDelegateContract', () => {
                 console.log('state1: ', state1, '  state2: ', state2);
                 return state2.equals(state1).toBoolean();
             },
-            isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
+            isLocalBlockChain
 
         });
 
-        console.log('ZkAppAcctInfo: ', JSON.stringify(await syncAcctInfo(zkAppAddress)));
-        console.log('voteDelegateContractAcctInfo: ', JSON.stringify(await syncAcctInfo(voteDelegateContractAddress)));
+        console.log('ZkAppAcctInfo: ', JSON.stringify(await syncAcctInfo(zkAppAddress, Field(1), isLocalBlockChain)));
+        console.log('voteDelegateContractAcctInfo: ', JSON.stringify(await syncAcctInfo(voteDelegateContractAddress, Field(1), isLocalBlockChain)));
         expect(zkApp.account.delegate.get()).not.toEqual(delegate0);
         expect(zkApp.account.delegate.get()).toEqual(voteDelegateContract.targetDelegateTo.get());
 
         // fetch events to confirm
         let events = await zkApp.fetchEvents(purchaseEndBlockHeight);
         console.log(`fetchEvents(${purchaseEndBlockHeight.toString()}): `, JSON.stringify(events));
-                 
+
         expect(events.filter((e) => {
             return e.type == 'set-delegate'
-        })[0].event).toEqual(newDelegateTargetAddress); 
-        
+        })[0].event).toEqual(newDelegateTargetAddress);
+
         console.log(`trigger voteDelegateContract.voteDelegateTo(*): tx confirmed!`);
 
         // 
