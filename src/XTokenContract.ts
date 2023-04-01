@@ -65,6 +65,8 @@ export class XTokenContract extends SmartContract {
 
     /**
      * init or reset by admin
+     * 
+     * TODO could improve it by signature on all params&accountNonce
      */
     @method initOrReset(supply: UInt64, maximumPurchasingAmount: UInt64, memberShipContractAddress: PublicKey, purchaseStartBlockHeight: UInt32, purchaseEndBlockHeight: UInt32, adminPriKey: PrivateKey) {
         // check if admin
@@ -115,7 +117,7 @@ export class XTokenContract extends SmartContract {
         // check precondition_network.blockHeight
         this.network.blockchainLength.assertBetween(this.purchaseEndBlockHeight.get(), UInt32.MAXINT());
 
-        // check if timingLocked Mina
+        // SUPPLY.assertEquals(totalAmountInCirculation means some Mina has been timingLocked 
         this.SUPPLY.assertEquals(totalAmountInCirculation0);
 
         // send mina, underlyingly check if current amount is beyond the timing-locking amount.
@@ -315,6 +317,7 @@ export class XTokenContract extends SmartContract {
     /**
      * called by `VoteDelegateContract`, to set new `delegate` by admin. 
      * 
+     * TODO could improve it by signature on all params&accountNonce
      * @param target new delegate address
      * @param adminPriKey 
      */
