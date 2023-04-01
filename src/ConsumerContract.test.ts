@@ -99,7 +99,7 @@ describe('test fuctions inside ConsumerContract', () => {
     });
 
     afterAll(() => {
-        // setInterval(shutdown, 0);
+        setInterval(shutdown, 0);
     });
 
     beforeEach(async () => {
