@@ -13,14 +13,14 @@ This zkApp is an demo working for ICO activities, covering features as below:
 
 5. automatically timing-lock partial MINA and release them periodically,
 
-6. send custom tokens by proof auth,
+6. transfer custom tokens by proof auth & by signature, burn custom tokens by signature,
 
 7. initial members vote to set new 'delegate' address,
 
 
 Within the MVP, there are three key smart contracts and one zkProgram circuit:
 
-- smart contracts: `XTokenContract.ts, Membership.ts, VoteDelegateContract.ts`
+- smart contracts: `XTokenContract.ts, Membership.ts, VoteDelegateContract.ts, ConsumerContract.ts`
 
 - zkProgram circuit: `vote.ts`
 
@@ -38,40 +38,38 @@ token info inside `XTokenContract.ts`：
 
 ## Surface Areas
 1) initialize or reset token info, like tokenSupply, tokenSymbol, maximumPurchasingAmount per address, zkappUri,
-
- * 7Permissions
-   	* URI
-   	* Set Token Symbol
+	* 7Permissions
+	  * URI
+	  * Set Token Symbol
 
 2) specify which block height the ICO starts & ends,
 
-* 6Pre-conditions (network)
+	* 6Pre-conditions (network)
 
 3) purchase tokens(mint), and record the initial members during ICO,
-
-* 2Call stack composability
-* 4Events
-* 7Permissions
-  - Set Timing
-* 9Tokens
+	* 2Call stack composability
+	* 4Events
+	* 7Permissions
+	  * Set Timing
+	* 9Tokens
 
 4) initial members vote to burn extra tokens or not if there are tokens lefts,
-
-* 3Actions
+	* 3Actions
 
 5) automatically timing-lock partial MINA and release periodically,
-
 	* 5Preconditions (account)
+	* 7Permissions
+		* Set Timing
 
-* 7Permissions
-     * Set Timing
+6) transfer custom tokens by proof auth & by signature, burn custom tokens by signature,
+	* 2Call stack composability
+	* 9Tokens
 
-6) initial members vote to set new 'delegate' address,
-
-* 1Recursion
-
-* 7.Permissions
-  * Set Delegate
+7) initial members vote to set new 'delegate' address,
+	* 1Recursion
+	* 2Call stack composability
+	* 7Permissions
+		* Set Delegate
 
 ## Unit Test
 * XTokenContract.test.ts【!!NOTE: cost much time & memory resource】
@@ -82,6 +80,9 @@ token info inside `XTokenContract.ts`：
   	* CHECK if (timing-lock Mina balance when totalAmountInCirculation == SUPPLY) AND (Mina of 'cliffAmount' cannot be transferred before 'cliffTime')
   	* CHECK if one can ONLY vote for ONE time To Process Rest Tokens AND rollup VoteNotes by reducing Actions	
   	* CHECK transfer custom tokens with proof authorization
+	* CHECK transfer custom tokens with holders' signature
+	* CHECK burn custom tokens by holders' signature
+	* CHECK 'setDelegate' with Permission.proof cannot be set with Signature authorization
 
 * VoteDelegateContract.test.ts【!!NOTE: cost much time & memory resource】
   	* CHECK all members (recursively) votes to set delegate
