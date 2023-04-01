@@ -47,7 +47,8 @@ export class XTokenContract extends SmartContract {
             setDelegate: permissionToEdit,
 
             setTiming: Permissions.proofOrSignature(),
-            setVotingFor: Permissions.proofOrSignature()
+            setVotingFor: Permissions.proofOrSignature(),
+            // incrementNonce: Permissions.proof()
         });
 
         this.actionHashVote.set(Reducer.initialActionsHash);
@@ -98,7 +99,7 @@ export class XTokenContract extends SmartContract {
 
         const blockchainLength0 = this.network.blockchainLength.get();
         this.network.blockchainLength.assertEquals(blockchainLength0);
-        
+
         // check if admin
         this.address.assertEquals(adminPriKey.toPublicKey());
 
@@ -130,6 +131,7 @@ export class XTokenContract extends SmartContract {
 
         const blockchainLength0 = this.network.blockchainLength.get();
         this.network.blockchainLength.assertEquals(blockchainLength0);
+        Circuit.log('blockchainLength0: ', blockchainLength0);
 
         const maximumPurchasingAmount0 = this.maximumPurchasingAmount.get();
         this.maximumPurchasingAmount.assertEquals(maximumPurchasingAmount0);
@@ -146,7 +148,7 @@ export class XTokenContract extends SmartContract {
         // check precondition_network.blockchainLength
         blockchainLength0.assertGreaterThanOrEqual(purchaseStartBlockHeight0);
         blockchainLength0.assertLessThanOrEqual(purchaseEndBlockHeight0);
-        
+
         // check if members are of non-existence and add a member if non-existent
         const membershipContract = new Membership(memberShipContractAddress0);
         membershipContract.addNewMember(purchaser, witness);
@@ -179,7 +181,7 @@ export class XTokenContract extends SmartContract {
         this.network.globalSlotSinceGenesis.assertEquals(globalSLot0);
         Circuit.log('globalSLot0: ', globalSLot0);
 
-        const cliffTime0 = globalSLot0.add(3);// set 3 for Unit Test
+        const cliffTime0 = globalSLot0.add(4);// set 3 for Unit Test
         const cliffAmount0 = UInt64.from(initialMinimumBalance0.div(10));
         const vestingPeriod0 = UInt32.from('1');// default == 1
         const vestingIncrement0 = UInt64.from(initialMinimumBalance0.div(10));
@@ -279,7 +281,7 @@ export class XTokenContract extends SmartContract {
         // meanwhile, timing-lock Mina balance
         this.account.balance.assertEquals(this.account.balance.get());
         const initialMinimumBalance0 = this.account.balance.get().div(3).mul(2);
-        const cliffTime0 = globalSLot0.add(3);// set 3 for Unit Test
+        const cliffTime0 = globalSLot0.add(4);// set 3 for Unit Test
         const cliffAmount0 = UInt64.from(initialMinimumBalance0.div(10));
         const vestingPeriod0 = UInt32.from('1');
         const vestingIncrement0 = UInt64.from(initialMinimumBalance0.div(10));
@@ -340,6 +342,39 @@ export class XTokenContract extends SmartContract {
         zkapp.account.permissions.set(Permissions.default());
         zkapp.account.verificationKey.set(verificationKey);
         zkapp.requireSignature();
+    }
+
+    @method sendTokens(
+        senderAddress: PublicKey,
+        receiverAddress: PublicKey,
+        amount: UInt64
+    ) {
+        this.token.send({
+            to: receiverAddress,
+            from: senderAddress,
+            amount,
+        });
+    }
+
+    @method burnTokens(
+        targetAddress: PublicKey,
+        amount: UInt64
+    ) {
+        const SUPPLY0 = this.SUPPLY.get();
+        this.SUPPLY.assertEquals(SUPPLY0);
+
+        const totalAmountInCirculation0 = this.totalAmountInCirculation.get();
+        this.totalAmountInCirculation.assertEquals(totalAmountInCirculation0);
+
+        this.SUPPLY.assertEquals(totalAmountInCirculation0);
+
+        this.token.burn({
+            address: targetAddress,
+            amount
+        });
+
+        this.SUPPLY.set(SUPPLY0.sub(amount));
+        this.totalAmountInCirculation.set(totalAmountInCirculation0.sub(amount));
     }
 }
 
