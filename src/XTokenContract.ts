@@ -85,7 +85,7 @@ export class XTokenContract extends SmartContract {
         // when reset all, need to reduce to clear actions
         const actionHashVote0 = this.actionHashVote.get();
         this.actionHashVote.assertEquals(actionHashVote0);
-        const pendingActions = this.reducer.getActions({ fromActionHash: actionHashVote0 });
+        const pendingActions = this.reducer.getActions({ fromActionState: actionHashVote0 });
         Circuit.log('pendingActions: ', pendingActions);
         let { state: checkRs, actionsHash: newActionHash } = this.reducer.reduce(pendingActions, Bool, (state: Bool, action: VoteNote) => {
             return state;
@@ -236,7 +236,7 @@ export class XTokenContract extends SmartContract {
         voteOption.assertGreaterThanOrEqual(UInt64.from(1));
         voteOption.assertLessThanOrEqual(UInt64.from(2));
         // record <voter, voteNote> as Action, so need to check if the voter has voted before.
-        const pendingActions0 = this.reducer.getActions({ fromActionHash: this.actionHashVote.get() });
+        const pendingActions0 = this.reducer.getActions({ fromActionState: this.actionHashVote.get() });
         Circuit.log('pendingActions0: ', pendingActions0);
 
         let { state: checkRs, actionsHash: newActionHash } = this.reducer.reduce(pendingActions0, Bool, (state: Bool, action: VoteNote) => {
@@ -272,7 +272,7 @@ export class XTokenContract extends SmartContract {
         // check precondition_network.blockHeight is greaterorequal purchaseEndBlockHeight
         this.network.blockchainLength.assertBetween(this.purchaseEndBlockHeight.get(), UInt32.MAXINT());
 
-        const pendingActions = this.reducer.getActions({ fromActionHash: this.actionHashVote.get() });
+        const pendingActions = this.reducer.getActions({ fromActionState: this.actionHashVote.get() });
         Circuit.log('pendingActions: ', pendingActions);
 
         let actionsYCount = UInt32.from(0);

@@ -473,7 +473,7 @@ describe('test fuctions inside XTokenContract', () => {
 
         console.log('===================[CHECK if one can ONLY vote for ONE time To Process Rest Tokens]===================');
         console.log('     ========== the firstUser vote again( tx should fail ) ==========     ')
-        let pendingActions1 = zkApp.reducer.getActions({ fromActionHash: Reducer.initialActionsHash });
+        let pendingActions1 = zkApp.reducer.getActions({ fromActionState: Reducer.initialActionsHash });
         try {
             await makeAndSendTransaction({
                 feePayerPublicKey: userPubKeyFirst,
@@ -509,7 +509,7 @@ describe('test fuctions inside XTokenContract', () => {
         }
         zkAppAcctInfo = await syncAcctInfo(zkAppAddress, Field(1), isLocalBlockChain);
         console.log('ZkAppAcctInfo: ', JSON.stringify(zkAppAcctInfo));
-        expect(zkApp.reducer.getActions({ fromActionHash: Reducer.initialActionsHash }).length).toEqual(pendingActions1.length);
+        expect(zkApp.reducer.getActions({ fromActionState: Reducer.initialActionsHash }).length).toEqual(pendingActions1.length);
 
         console.log('========================secUser starts========================');
         let userPriKeySec = PrivateKey.random();

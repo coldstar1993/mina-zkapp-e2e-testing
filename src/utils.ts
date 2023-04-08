@@ -7,6 +7,7 @@ import {
   Types,
   fetchLastBlock,
   UInt32,
+  Reducer,
 } from 'snarkyjs';
 import { fetchActions } from 'snarkyjs/dist/node/lib/fetch.js';
 
@@ -16,7 +17,7 @@ export async function syncActions(targetAddr: PublicKey, isLocalBlockChain?: boo
       let actionsList;
       try {
         // get the length of actions list, and compare later to confirm the tx is done!
-        actionsList = await fetchActions({ publicKey: targetAddr.toBase58() });// will throw error if duplicate actions issue.
+        actionsList = await fetchActions({ publicKey: targetAddr.toBase58(), actionStates:{fromActionState: Reducer.initialActionsHash.toString()} });// will throw error if duplicate actions issue.
       } catch (error) {// exisitng issue: duplicate actions 
         console.log(`error: await fetchActions({ publicKey: ${targetAddr.toBase58()} }): `, JSON.stringify(error));
 
