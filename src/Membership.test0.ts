@@ -56,11 +56,11 @@ describe('test fuctions inside Membership', () => {
         await syncNetworkStatus();
 
         if (process.env.TEST_ON_BERKELEY! == 'true') {// Berkeley
-            senderKey = PrivateKey.fromBase58('EKDmWEWjC6UampzAph9ddAbnmuBgHAfiQhAmSVT6ACJgPFzCsoTW');
+            senderKey = PrivateKey.random();//PrivateKey.fromBase58('EKDmWEWjC6UampzAph9ddAbnmuBgHAfiQhAmSVT6ACJgPFzCsoTW');
             senderAccount = senderKey.toPublicKey();//    pubKey:  B62qkvenQ4bZ5qt5QJN8bmEq92KskKH4AZP7pgbMoyiMAccWTWjHRoD
 
             console.log(`Funding fee payer ${senderAccount.toBase58()} and waiting for inclusion in a block..`);
-            // await Mina.faucet(senderAccount);
+            await Mina.faucet(senderAccount);
             await loopUntilAccountExists({
                 address: senderAccount,
                 eachTimeNotExist: () => { console.log('[loopUntilAccountExists] senderAccount is still not exiting, loop&wait...'); },
