@@ -2,7 +2,7 @@ import { AccountUpdate, fetchTransactionStatus, Field, isReady, MerkleMap, Mina,
 import { XTokenContract } from './XTokenContract.js';
 import { Membership } from './Membership.js';
 import { ConsumerContract } from './ConsumerContract.js';
-import { loopUntilAccountExists, makeAndSendTransaction, syncNetworkStatus, syncAcctInfo } from './utils.js';
+import { loopUntilAccountExists, makeAndSendTransaction, syncNetworkStatus, syncAcctInfo, waitBlockHeightToExceed } from './utils.js';
 
 describe('test fuctions inside ConsumerContract', () => {
     let isLocalBlockChain = !(process.env.TEST_ON_BERKELEY! == 'true');
@@ -280,7 +280,6 @@ describe('test fuctions inside ConsumerContract', () => {
         });
 
         // wait for blockheight grows
-        // await waitBlockHeightToExceed(purchaseEndBlockHeight);
         console.log('============== the user purchses token done ==============');
         await makeAndSendTransaction({
             feePayerPublicKey: senderKey.toPublicKey(),
@@ -293,15 +292,20 @@ describe('test fuctions inside ConsumerContract', () => {
             signTx(tx: Mina.Transaction) {
                 tx.sign([senderKey, userPriKeyFirst]);
             },
-            getState() {
-                return 0;
+            async getState() {
+                let consumerContractAcctInfo = await syncAcctInfo(consumerContractAddress, zkApp.token.id, isLocalBlockChain);
+                console.log('consumerContractAcctInfo: ', JSON.stringify(consumerContractAcctInfo));
+                if (consumerContractAcctInfo == undefined) {
+                    return '0';
+                }
+                return consumerContractAcctInfo.balance.toString();
             },
             statesEqual(state1, state2) {
-                return false;
+                return state1 == state2;
             },
             isLocalBlockChain
         });
-
+        // await waitBlockHeightToExceed((await syncNetworkStatus()).blockchainLength.add(2));// enough to wait for 2 blocks on Berkeley
         let userAcctInfo = await syncAcctInfo(userPubKeyFirst, zkApp.token.id, isLocalBlockChain);
         console.log('userAcctInfo: ', JSON.stringify(userAcctInfo));
         let consumerContractAcctInfo = await syncAcctInfo(consumerContractAddress, zkApp.token.id, isLocalBlockChain);
