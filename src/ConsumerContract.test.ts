@@ -111,6 +111,7 @@ describe('test fuctions inside ConsumerContract', () => {
 
             console.log(`Funding fee payer ${senderAccount.toBase58()} and waiting for inclusion in a block..`);
             await Mina.faucet(senderAccount);
+            console.log('Mina.faucet...');
             await loopUntilAccountExists({
                 address: senderAccount,
                 eachTimeNotExist: () => { console.log('[loopUntilAccountExists] senderAccount is still not exiting, loop&wait...'); },
