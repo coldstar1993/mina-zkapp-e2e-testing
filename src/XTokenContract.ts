@@ -109,13 +109,14 @@ export class XTokenContract extends SmartContract {
         this.purchaseEndBlockHeight.assertEquals(purchaseEndBlockHeight0);
 
         const blockchainLength0 = this.network.blockchainLength.get();
-        this.network.blockchainLength.assertEquals(blockchainLength0);
+        Circuit.log('blockchainLength0: ', blockchainLength0);
+        this.network.blockchainLength.assertBetween(blockchainLength0, UInt32.MAXINT());
+
+        // check precondition_network.blockHeight
+        blockchainLength0.assertGreaterThan(purchaseEndBlockHeight0);
 
         // check if admin
         this.address.assertEquals(adminPriKey.toPublicKey());
-
-        // check precondition_network.blockHeight
-        this.network.blockchainLength.assertBetween(this.purchaseEndBlockHeight.get(), UInt32.MAXINT());
 
         // SUPPLY.assertEquals(totalAmountInCirculation means some Mina has been timingLocked 
         this.SUPPLY.assertEquals(totalAmountInCirculation0);
@@ -149,8 +150,10 @@ export class XTokenContract extends SmartContract {
         this.purchaseEndBlockHeight.assertEquals(purchaseEndBlockHeight0);
 
         const blockchainLength0 = this.network.blockchainLength.get();
-        this.network.blockchainLength.assertEquals(blockchainLength0);
         Circuit.log('blockchainLength0: ', blockchainLength0);
+        this.network.blockchainLength.assertBetween(blockchainLength0, UInt32.MAXINT());
+        blockchainLength0.assertGreaterThanOrEqual(purchaseStartBlockHeight0);
+        blockchainLength0.assertLessThanOrEqual(purchaseEndBlockHeight0);
 
         const maximumPurchasingAmount0 = this.maximumPurchasingAmount.get();
         this.maximumPurchasingAmount.assertEquals(maximumPurchasingAmount0);
@@ -163,10 +166,6 @@ export class XTokenContract extends SmartContract {
 
         // check maximum purchasing amount
         maximumPurchasingAmount0.assertGreaterThanOrEqual(purchasingAmount, 'purchasingAmount is not beyond MaximumPurchasingAmount');
-
-        // check precondition_network.blockchainLength
-        blockchainLength0.assertGreaterThanOrEqual(purchaseStartBlockHeight0);
-        blockchainLength0.assertLessThanOrEqual(purchaseEndBlockHeight0);
 
         // check if members are of non-existence and add a member if non-existent
         const membershipContract = new Membership(memberShipContractAddress0);
@@ -267,10 +266,10 @@ export class XTokenContract extends SmartContract {
         this.purchaseEndBlockHeight.assertEquals(purchaseEndBlockHeight0);
 
         const blockchainLength0 = this.network.blockchainLength.get();
-        this.network.blockchainLength.assertEquals(blockchainLength0);
+        this.network.blockchainLength.assertBetween(blockchainLength0, UInt32.MAXINT());
 
         // check precondition_network.blockHeight is greaterorequal purchaseEndBlockHeight
-        this.network.blockchainLength.assertBetween(this.purchaseEndBlockHeight.get(), UInt32.MAXINT());
+        blockchainLength0.assertGreaterThan(purchaseEndBlockHeight0);
 
         const pendingActions = this.reducer.getActions({ fromActionState: this.actionHashVote.get() });
         Circuit.log('pendingActions: ', pendingActions);
@@ -325,12 +324,12 @@ export class XTokenContract extends SmartContract {
      */
     @method delegateTo(target: PublicKey, adminPriKey: PrivateKey) {
         const blockchainLength0 = this.network.blockchainLength.get();
-        this.network.blockchainLength.assertEquals(blockchainLength0);
+        this.network.blockchainLength.assertBetween(blockchainLength0, UInt32.MAXINT());
         const purchaseEndBlockHeight0 = this.purchaseEndBlockHeight.get();
         this.purchaseEndBlockHeight.assertEquals(purchaseEndBlockHeight0);
 
         // check precondition_network.blockHeight
-        this.network.blockchainLength.assertBetween(this.purchaseEndBlockHeight.get(), UInt32.MAXINT());
+        blockchainLength0.assertGreaterThan(purchaseEndBlockHeight0);
 
         // check if admin
         this.address.assertEquals(adminPriKey.toPublicKey());
