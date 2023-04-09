@@ -118,8 +118,8 @@ export class XTokenContract extends SmartContract {
         // check if admin
         this.address.assertEquals(adminPriKey.toPublicKey());
 
-        // SUPPLY.assertEquals(totalAmountInCirculation means some Mina has been timingLocked 
-        this.SUPPLY.assertEquals(totalAmountInCirculation0);
+        // SUPPLY.assertEquals(totalAmountInCirculation) means some Mina has been timingLocked 
+        SUPPLY0.assertEquals(totalAmountInCirculation0);
 
         // send mina, underlyingly check if current amount is beyond the timing-locking amount.
         this.send({ to, amount });
@@ -159,7 +159,8 @@ export class XTokenContract extends SmartContract {
         this.maximumPurchasingAmount.assertEquals(maximumPurchasingAmount0);
 
         // no need to check account.balance
-        this.account.balance.assertEquals(this.account.balance.get());
+        let balance0 = this.account.balance.get();
+        this.account.balance.assertBetween(balance0, UInt64.MAXINT());
 
         // check enough
         SUPPLY0.sub(totalAmountInCirculation0).assertGreaterThanOrEqual(purchasingAmount, 'restAmount is enough for purchasingAmount');
@@ -177,7 +178,7 @@ export class XTokenContract extends SmartContract {
         purchaserAccountUpdate.balance.subInPlace(minaCost);
 
         this.balance.addInPlace(minaCost);
-        const acctBalance1 = this.account.balance.get().add(minaCost);
+        const acctBalance1 = balance0.add(minaCost);
         Circuit.log('acctBalance1: ', acctBalance1);
 
         Circuit.log('to mint...');
@@ -197,7 +198,7 @@ export class XTokenContract extends SmartContract {
         Circuit.log('initialMinimumBalance0:', initialMinimumBalance0);
 
         let globalSLot0 = this.network.globalSlotSinceGenesis.get();
-        this.network.globalSlotSinceGenesis.assertEquals(globalSLot0);
+        this.network.globalSlotSinceGenesis.assertBetween(globalSLot0, UInt32.MAXINT());
         Circuit.log('globalSLot0: ', globalSLot0);
 
         const cliffTime0 = globalSLot0.add(4);// set +4 for Unit Test
@@ -297,12 +298,13 @@ export class XTokenContract extends SmartContract {
         Circuit.log('newActionHash: ', newActionHash);
 
         let globalSLot0 = this.network.globalSlotSinceGenesis.get();
-        this.network.globalSlotSinceGenesis.assertEquals(globalSLot0);
+        this.network.globalSlotSinceGenesis.assertBetween(globalSLot0, UInt32.MAXINT());
         Circuit.log('globalSLot0: ', globalSLot0);
 
         // meanwhile, timing-lock Mina balance
-        this.account.balance.assertEquals(this.account.balance.get());
-        const initialMinimumBalance0 = this.account.balance.get().div(3).mul(2);
+        let balance0 = this.account.balance.get();
+        this.account.balance.assertBetween(balance0, UInt64.MAXINT());
+        const initialMinimumBalance0 = balance0.div(3).mul(2);
         const cliffTime0 = globalSLot0.add(4);// set 3 for Unit Test
         const cliffAmount0 = UInt64.from(initialMinimumBalance0.div(10));
         const vestingPeriod0 = UInt32.from('1');
