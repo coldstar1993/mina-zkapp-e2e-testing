@@ -89,7 +89,7 @@ describe('test fuctions inside XTokenContract', () => {
 
         Blockchain = !isLocalBlockChain ? Mina.Network({
             mina: 'https://proxy.berkeley.minaexplorer.com/graphql',
-            archive: 'https://archive.berkeley.minaexplorer.com/',
+            archive: 'https://archive-node-api.p42.xyz/',// archive: 'https://archive.berkeley.minaexplorer.com/',
         }) : Mina.LocalBlockchain({ proofsEnabled: true });
         Mina.setActiveInstance(Blockchain);
 
@@ -300,7 +300,7 @@ describe('test fuctions inside XTokenContract', () => {
         console.log('========== [END]CHECK tx should succeed when purchase tokens by an non-existing user, but should fail when purchase by an existing user ==========');
     });
 
-/*  // PASS on BERKELEY 0410
+/*  // PASS on BERKELEY 0409
     it(`CHECK tx should fail when purchase tokens when EXCEEDING maximum purchasing amount AND CHECK tx should fail when purchase tokens with EXCEEDING precondition.network.blockchainLength`, async () => {
         console.log('===================[CHECK tx should fail when purchase tokens when EXCEEDING maximum purchasing amount] ===================')
         let totalAmountInCirculation0 = zkApp.totalAmountInCirculation.get();
@@ -354,7 +354,7 @@ describe('test fuctions inside XTokenContract', () => {
         console.log('========== [END]CHECK tx should fail when purchase tokens when EXCEEDING maximum purchasing amount AND CHECK tx should fail when purchase tokens with EXCEEDING precondition.network.blockchainLength ==========');
 
     });
-    // PASS on BERKELEY 0410
+    // PASS on BERKELEY 0409
  */
 
     it(`CHECK tx should fail when purchase tokens when (totalAmountInCirculation + purchasingAmount) > SUPPLY `, async () => {
@@ -400,7 +400,7 @@ describe('test fuctions inside XTokenContract', () => {
         console.log('========== [END]CHECK tx should fail when purchase tokens when (totalAmountInCirculation + purchasingAmount) > SUPPLY ==========');
     });
 
-/* // pass on Berkeley on 0410
+/* // PASS on Berkeley on 0409
     it(`CHECK if (timing-lock Mina balance when totalAmountInCirculation == SUPPLY) AND (Mina of 'cliffAmount' can be transferred after 'cliffTime')`, async () => {
         console.log('===================[CHECK if timing-lock Mina balance when totalAmountInCirculation == SUPPLY]===================');
 
@@ -435,6 +435,7 @@ describe('test fuctions inside XTokenContract', () => {
         expect(zkAppAcctInfo?.timing.cliffAmount).toEqual(UInt64.from('200000000'));
         expect(zkAppAcctInfo?.timing.vestingIncrement).toEqual(UInt64.from('200000000'));
     });
+    // PASS on Berkeley on 0409
  */
 /*  // not pass, because of FetchAction return []
     it(`CHECK if one can ONLY vote for ONE time To Process Rest Tokens AND rollup VoteNotes by reducing Actions`, async () => {
@@ -767,7 +768,7 @@ describe('test fuctions inside XTokenContract', () => {
         console.log('========== [END]CHECK \'Delegate\' cannot be set by Signature auth ==========');
     });
 
-/*  On Berkeley 0410: Couldn't send zkApp command: Some commands have an insufficient fee
+/*  On Berkeley 0409: Couldn't send zkApp command: Some commands have an insufficient fee
     it('CHECK \'Burn\' custom token', async () => {
         console.log('===================[CHECK \'Burn\' custom token]===================');
         console.log('========================firstUser starts========================');
