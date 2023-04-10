@@ -8,7 +8,7 @@ describe('test fuctions inside XTokenContract', () => {
     let isLocalBlockChain = !(process.env.TEST_ON_BERKELEY! == 'true');
 
     let Blockchain: any;
-    let transactionFee = 100_000_000;
+    let transactionFee = 300_000_000;
 
     let
         senderAccount: PublicKey,
