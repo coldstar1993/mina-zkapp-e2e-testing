@@ -32,9 +32,13 @@ token info inside `XTokenContract.ts`：
 		totalAmountInCirculation: 0 initially, and increase as purchasing ,
 		maximumPurchasingAmount: 2 ,
 		purchaseStartBlockHeight: defaultly at when contract deploy,
-		purchaseEndBlockHeight: purchaseStartBlockHeight + 5 ,
+		purchaseEndBlockHeight: purchaseStartBlockHeight + 20 ,
 		actionHashVote: Reducer.initialActionsHash ,
 ```
+
+**NOTE: due to the dynamic traffic status of Berkeley Network, `purchaseEndBlockHeight` need to be adjusted to be bigger properly. Otherwise, when at heavy traffic status, pending transactions upon purchasing token might fail later because of exceeding `purchaseEndBlockHeight`, thus the test case would fail!**
+
+**NOTE：both 'dynamic traffic status of Berkeley Network' and `purchaseEndBlockHeight` impact the time cost of test cases!!**
 
 ## Surface Areas
 1) initialize or reset token info, like tokenSupply, tokenSymbol, maximumPurchasingAmount per address, zkappUri,
@@ -72,13 +76,15 @@ token info inside `XTokenContract.ts`：
 		* Set Delegate
 
 ## Unit Test
+**NOTE：both 'dynamic traffic status of Berkeley Network' and `purchaseEndBlockHeight` impact the time cost of test cases!!**
+
 Totally, Run these Unit Tests in sequence will cost 40mins almost locally, and 60mins almost On Berkeley.
 
 * Membership.test.ts【**!!NOTE: cost almost 10mins Locally, 20 mins on Berkeley & 4G memory resource**】
   	* CHECK tx should fail when store an existing user
 	* CHECK tx should succeed when store an non-existing user
 
-* XTokenContract.test.ts【**!!NOTE: cost almost 20mins Locally, 40 mins on Berkeley & 6G memory resource**】
+* XTokenContract.test.ts【**!!NOTE: cost almost 20mins Locally, at least 60 mins on Berkeley & 6G memory resource**】
   	* CHECK tx should succeed when purchase tokens by an non-existing user, but should fail when purchase by an existing user
   	* CHECK tx should fail when purchase tokens with EXCEEDING precondition.network.blockchainLength
   	* CHECK tx should fail when purchase tokens when EXCEEDING maximum purchasing amount
@@ -90,10 +96,10 @@ Totally, Run these Unit Tests in sequence will cost 40mins almost locally, and 6
 	* CHECK burn custom tokens by holders' signature
 	* CHECK 'setDelegate' with Permission.proof cannot be set with Signature authorization
 
-* VoteDelegateContract.test.ts【**!!NOTE: cost almost 30mins Locally, 50 mins on Berkeley & 8G memory resource**】
+* VoteDelegateContract.test.ts【**!!NOTE: cost almost 30mins Locally, at least 50 mins on Berkeley & 8G memory resource**】
   	* CHECK all members (recursively) votes to set delegate
 
-* ConsumerContract.test.ts【**!!NOTE: cost almost 10mins Locally, 20 mins on Berkeley & 4G memory resource**】
+* ConsumerContract.test.ts【**!!NOTE: cost almost 10mins Locally,  at least 20 mins on Berkeley & 4G memory resource**】
     * Check thirdpart zkapp could successfully transfer custom token by holders' signature from XTokenContract.
 
 NOTE: 
