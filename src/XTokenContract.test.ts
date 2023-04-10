@@ -716,7 +716,7 @@ describe('test fuctions inside XTokenContract', () => {
         });
 
         let normalTokenUser = new NormalTokenUser(userPubKey, tokenId);
-        let tx1 = await Mina.transaction(userPubKey, () => {
+        let tx1 = await Mina.transaction({sender: userPubKey, fee: transactionFee}, () => {
             let approveSendingCallback = Experimental.Callback.create(
                 normalTokenUser,
                 'approveTokenTransfer',
@@ -749,7 +749,7 @@ describe('test fuctions inside XTokenContract', () => {
         let delegate0 = zkApp.account.delegate.get();
         console.log('delegate0: ', delegate0.toBase58());
         try {
-            let tx = await Mina.transaction(senderAccount, () => {
+            let tx = await Mina.transaction({sender: senderAccount, fee: transactionFee}, () => {
                 let onePriKey = PrivateKey.random();
                 let onePublicKey = onePriKey.toPublicKey();
                 zkApp.account.delegate.set(onePublicKey);
@@ -795,7 +795,7 @@ describe('test fuctions inside XTokenContract', () => {
 
         // try to burn tokens
         try {
-            let tx0 = await Mina.transaction(senderAccount, () => {
+            let tx0 = await Mina.transaction({sender: senderAccount, fee: transactionFee}, () => {
                 zkApp.burnTokens(userPriKeySec.toPublicKey(), UInt64.from(1));
             });
             await tx0.prove();
@@ -817,7 +817,7 @@ describe('test fuctions inside XTokenContract', () => {
         });
 
         // try to burn tokens
-        let tx01 = await Mina.transaction(senderAccount, () => {
+        let tx01 = await Mina.transaction({sender: senderAccount, fee: transactionFee}, () => {
             zkApp.burnTokens(userPriKeySec.toPublicKey(), UInt64.from(1));
         });
         await tx01.prove();
