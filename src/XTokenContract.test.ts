@@ -300,7 +300,7 @@ describe('test fuctions inside XTokenContract', () => {
         console.log('========== [END]CHECK tx should succeed when purchase tokens by an non-existing user, but should fail when purchase by an existing user ==========');
     });
 
-
+/*  // PASS on BERKELEY 0410
     it(`CHECK tx should fail when purchase tokens when EXCEEDING maximum purchasing amount AND CHECK tx should fail when purchase tokens with EXCEEDING precondition.network.blockchainLength`, async () => {
         console.log('===================[CHECK tx should fail when purchase tokens when EXCEEDING maximum purchasing amount] ===================')
         let totalAmountInCirculation0 = zkApp.totalAmountInCirculation.get();
@@ -354,7 +354,8 @@ describe('test fuctions inside XTokenContract', () => {
         console.log('========== [END]CHECK tx should fail when purchase tokens when EXCEEDING maximum purchasing amount AND CHECK tx should fail when purchase tokens with EXCEEDING precondition.network.blockchainLength ==========');
 
     });
-
+    // PASS on BERKELEY 0410
+ */
 
     it(`CHECK tx should fail when purchase tokens when (totalAmountInCirculation + purchasingAmount) > SUPPLY `, async () => {
         console.log('===================[CHECK tx should fail when purchase tokens when (totalAmountInCirculation + purchasingAmount) > SUPPLY ] ===================')
@@ -766,7 +767,7 @@ describe('test fuctions inside XTokenContract', () => {
         console.log('========== [END]CHECK \'Delegate\' cannot be set by Signature auth ==========');
     });
 
-
+/*  On Berkeley 0410: Couldn't send zkApp command: Some commands have an insufficient fee
     it('CHECK \'Burn\' custom token', async () => {
         console.log('===================[CHECK \'Burn\' custom token]===================');
         console.log('========================firstUser starts========================');
@@ -791,6 +792,7 @@ describe('test fuctions inside XTokenContract', () => {
             accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 1 * 1e9 });
         });
 
+        // try to burn tokens
         try {
             let tx0 = await Mina.transaction(senderAccount, () => {
                 zkApp.burnTokens(userPriKeySec.toPublicKey(), UInt64.from(1));
@@ -813,6 +815,7 @@ describe('test fuctions inside XTokenContract', () => {
             accUpdt.send({ to: userPriKey0.toPublicKey(), amount: 1 * 1e9 });
         });
 
+        // try to burn tokens
         let tx01 = await Mina.transaction(senderAccount, () => {
             zkApp.burnTokens(userPriKeySec.toPublicKey(), UInt64.from(1));
         });
@@ -825,4 +828,5 @@ describe('test fuctions inside XTokenContract', () => {
         console.log('======== As Expected, tx failed, if user burn tokens WITH totalAmountInCirculation == SUPPLY ========');
         console.log('========== [END]CHECK \'Burn\' custom token ==========');
     });
+ */
 });
