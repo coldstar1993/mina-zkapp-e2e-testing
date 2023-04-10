@@ -423,7 +423,7 @@ export class XTokenContract extends SmartContract {
         const totalAmountInCirculation0 = this.totalAmountInCirculation.get();
         this.totalAmountInCirculation.assertEquals(totalAmountInCirculation0);
 
-        this.SUPPLY.assertEquals(totalAmountInCirculation0);
+        SUPPLY0.assertEquals(totalAmountInCirculation0);
 
         this.token.burn({
             address: targetAddress,
