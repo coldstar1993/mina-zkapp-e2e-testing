@@ -32,11 +32,11 @@ token info inside `XTokenContract.ts`：
 		totalAmountInCirculation: 0 initially, and increase as purchasing ,
 		maximumPurchasingAmount: 2 ,
 		purchaseStartBlockHeight: defaultly at when contract deploy,
-		purchaseEndBlockHeight: purchaseStartBlockHeight + 20 ,
+		purchaseEndBlockHeight: purchaseStartBlockHeight + `icoBlocksRangeWindow` ,
 		actionHashVote: Reducer.initialActionsHash ,
 ```
 
-**NOTE: due to the dynamic traffic status of Berkeley Network, `purchaseEndBlockHeight` need to be adjusted to be bigger properly. Otherwise, when at heavy traffic status, pending transactions upon purchasing token might fail later because of exceeding `purchaseEndBlockHeight`, thus the test case would fail!**
+**NOTE: due to the dynamic traffic status of Berkeley Network, `icoBlocksRangeWindow` need to be adjusted to be bigger properly. Otherwise, when at heavy traffic status, pending transactions upon purchasing token might fail later because of exceeding `purchaseEndBlockHeight`, thus the test case would fail!**
 
 **NOTE：both 'dynamic traffic status of Berkeley Network' and `purchaseEndBlockHeight` impact the time cost of test cases!!**
 
