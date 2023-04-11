@@ -755,9 +755,10 @@ describe('test fuctions inside XTokenContract', () => {
         console.log('delegate0: ', delegate0.toBase58());
         try {
             let tx = await Mina.transaction({ sender: senderAccount, fee: transactionFee }, () => {
+                let accupdt = AccountUpdate.create(zkAppAddress);
                 let onePriKey = PrivateKey.random();
                 let onePublicKey = onePriKey.toPublicKey();
-                zkApp.account.delegate.set(onePublicKey);
+                accupdt.account.delegate.set(onePublicKey);
             });
             tx.sign([senderKey, zkAppPrivateKey]);
             let txId = await tx.send();
