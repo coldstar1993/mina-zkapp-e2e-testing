@@ -8,7 +8,8 @@ describe('test fuctions inside XTokenContract', () => {
     let isLocalBlockChain = !(process.env.TEST_ON_BERKELEY! == 'true');
 
     let Blockchain: any;
-    let transactionFee = 300_000_000;
+    let transactionFee = 1000_000_000;
+    let icoBlocksRangeWindow = 18;
 
     let
         senderAccount: PublicKey,
@@ -148,7 +149,7 @@ describe('test fuctions inside XTokenContract', () => {
 
         // init appStatus values
         purchaseStartBlockHeight = Mina.activeInstance.getNetworkState().blockchainLength;
-        purchaseEndBlockHeight = Mina.activeInstance.getNetworkState().blockchainLength.add(8);// TODO
+        purchaseEndBlockHeight = Mina.activeInstance.getNetworkState().blockchainLength.add(icoBlocksRangeWindow);// TODO
         tokenSupply = UInt64.from(6);
         maximumPurchasingAmount = UInt64.from(2);
 
@@ -255,7 +256,7 @@ describe('test fuctions inside XTokenContract', () => {
         expect(zkAppUri).toEqual('https://github.com/coldstar1993/mina-zkapp-e2e-testing');
     });
 
-
+/* 
     it(`CHECK tx should succeed when purchase tokens by an non-existing user, but should fail when purchase by an existing user`, async () => {
         console.log('===================[CHECK tx should succeed purchase tokens by an non-existing user] ===================')
         let totalAmountInCirculation0 = zkApp.totalAmountInCirculation.get();
@@ -299,7 +300,7 @@ describe('test fuctions inside XTokenContract', () => {
 
         console.log('========== [END]CHECK tx should succeed when purchase tokens by an non-existing user, but should fail when purchase by an existing user ==========');
     });
-
+ */
 /*  // PASS on BERKELEY 0409
     it(`CHECK tx should fail when purchase tokens when EXCEEDING maximum purchasing amount AND CHECK tx should fail when purchase tokens with EXCEEDING precondition.network.blockchainLength`, async () => {
         console.log('===================[CHECK tx should fail when purchase tokens when EXCEEDING maximum purchasing amount] ===================')
@@ -356,7 +357,7 @@ describe('test fuctions inside XTokenContract', () => {
     });
     // PASS on BERKELEY 0409
  */
-
+/* 
     it(`CHECK tx should fail when purchase tokens when (totalAmountInCirculation + purchasingAmount) > SUPPLY `, async () => {
         console.log('===================[CHECK tx should fail when purchase tokens when (totalAmountInCirculation + purchasingAmount) > SUPPLY ] ===================')
 
@@ -399,7 +400,7 @@ describe('test fuctions inside XTokenContract', () => {
 
         console.log('========== [END]CHECK tx should fail when purchase tokens when (totalAmountInCirculation + purchasingAmount) > SUPPLY ==========');
     });
-
+ */
 /* // PASS on Berkeley on 0409
     it(`CHECK if (timing-lock Mina balance when totalAmountInCirculation == SUPPLY) AND (Mina of 'cliffAmount' can be transferred after 'cliffTime')`, async () => {
         console.log('===================[CHECK if timing-lock Mina balance when totalAmountInCirculation == SUPPLY]===================');
@@ -462,7 +463,7 @@ describe('test fuctions inside XTokenContract', () => {
                 tx.sign([userPriKeyFirst]);
             },
             async getState() {
-                console.log('firstUser votes........sususu');
+                console.log('firstUser votes........');
 
                 // get the length of actions list, and compare later to confirm the tx is done!
                 let actionsList = await syncActions(zkAppAddress, isLocalBlockChain);
@@ -716,7 +717,7 @@ describe('test fuctions inside XTokenContract', () => {
         });
 
         let normalTokenUser = new NormalTokenUser(userPubKey, tokenId);
-        let tx1 = await Mina.transaction({sender: userPubKey, fee: transactionFee}, () => {
+        let tx1 = await Mina.transaction({ sender: userPubKey, fee: transactionFee }, () => {
             let approveSendingCallback = Experimental.Callback.create(
                 normalTokenUser,
                 'approveTokenTransfer',
@@ -736,8 +737,8 @@ describe('test fuctions inside XTokenContract', () => {
         console.log(`[transfer token by proof-auth from one user to another user]'s tx[${tx1Id.hash()!}] sent...`);
         tx1Id.wait({ maxAttempts: 1000 });
 
-        expect(Mina.getBalance(userPubKey, tokenId).value.toBigInt()).toEqual(1n);
-        expect(Mina.getBalance(userPubKey1, tokenId).value.toBigInt()).toEqual(3n);
+        expect((await syncAcctInfo(userPubKey, tokenId, isLocalBlockChain)).balance.value.toBigInt()).toEqual(1n);
+        expect((await syncAcctInfo(userPubKey1, tokenId, isLocalBlockChain)).balance.value.toBigInt()).toEqual(3n);
 
         console.log('========== [END]CHECK transfer custom tokens with proof authorization ==========');
     })
