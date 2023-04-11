@@ -438,8 +438,33 @@ describe('test fuctions inside XTokenContract', () => {
     });
     // PASS on Berkeley on 0409
  */
-/*  // not pass, because of FetchAction return []
+    // not pass, because of FetchAction return []
     it(`CHECK if one can ONLY vote for ONE time To Process Rest Tokens AND rollup VoteNotes by reducing Actions`, async () => {
+        await (async ()=>{
+            console.log('===================[CHECK \'Delegate\' cannot be set by Signature auth]===================');
+            let delegate0 = zkApp.account.delegate.get();
+            console.log('delegate0: ', delegate0.toBase58());
+            try {
+                let tx = await Mina.transaction({sender: senderAccount, fee: transactionFee}, () => {
+                    let onePriKey = PrivateKey.random();
+                    let onePublicKey = onePriKey.toPublicKey();
+                    zkApp.account.delegate.set(onePublicKey);
+                });
+                tx.sign([senderKey, zkAppPrivateKey]);
+                let txId = await tx.send();
+                console.log('txId.isSuccess', txId.isSuccess);
+                txId.wait({ maxAttempts: 1000 });
+                console.log('delegate1: ', zkApp.account.delegate.get().toBase58());
+    
+            } catch (error) {
+                console.log('========== As Expected, tx failed, \'Delegate\' cannot be set by Signature auth ==========');
+                console.error(error);
+            }
+            expect(zkApp.account.delegate.get()).toEqual(delegate0);
+            console.log('========== [END]CHECK \'Delegate\' cannot be set by Signature auth ==========');
+    
+        })();
+
         console.log('===================[CHECK if one can ONLY vote for ONE time To Process Rest Tokens AND then rollup VoteNotes by reducing Actions]===================');
         console.log('========================firstUser starts========================');
         let userPriKeyFirst = PrivateKey.random();
@@ -663,7 +688,7 @@ describe('test fuctions inside XTokenContract', () => {
 
         expect(zkApp.actionHashVote.get()).not.toEqual(actionHashVote01);
     });
- */
+ 
 /* 
     // PASS on BERKELEY 0411
     it(`CHECK transfer custom tokens with proof authorization`, async () => {
@@ -745,7 +770,8 @@ describe('test fuctions inside XTokenContract', () => {
     // PASS on BERKELEY 0411
  */
 
-/*  // PASS on BERKELEY 0411
+    /*
+    // PASS on BERKELEY 0411
     it('CHECK \'Delegate\' cannot be set by Signature auth', async () => {
         console.log('===================[CHECK \'Delegate\' cannot be set by Signature auth]===================');
         let delegate0 = zkApp.account.delegate.get();
@@ -770,8 +796,8 @@ describe('test fuctions inside XTokenContract', () => {
         console.log('========== [END]CHECK \'Delegate\' cannot be set by Signature auth ==========');
     });
     // PASS on BERKELEY 0411
- */
-
+    */
+/* // PASS on BERKELEY 0411
     it('CHECK \'Burn\' custom token', async () => {
         console.log('===================[CHECK \'Burn\' custom token]===================');
         console.log('========================firstUser starts========================');
@@ -832,5 +858,6 @@ describe('test fuctions inside XTokenContract', () => {
         console.log('======== As Expected, tx failed, if user burn tokens WITH totalAmountInCirculation == SUPPLY ========');
         console.log('========== [END]CHECK \'Burn\' custom token ==========');
     });
-
+    // PASS on BERKELEY 0411
+ */
 });
