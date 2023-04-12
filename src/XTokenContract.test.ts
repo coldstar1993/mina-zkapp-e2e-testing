@@ -439,7 +439,6 @@ describe('test fuctions inside XTokenContract', () => {
     // PASS on Berkeley on 0409
  */
 
-/*
     // PASS on Berkeley on 0411
     it(`CHECK if one can ONLY vote for ONE time To Process Rest Tokens AND rollup VoteNotes by reducing Actions`, async () => {
         console.log('===================[CHECK if one can ONLY vote for ONE time To Process Rest Tokens AND then rollup VoteNotes by reducing Actions]===================');
@@ -666,7 +665,7 @@ describe('test fuctions inside XTokenContract', () => {
         expect(zkApp.actionHashVote.get()).not.toEqual(actionHashVote01);
     });
     // PASS on Berkeley on 0411
-*/
+
 /* 
     // PASS on BERKELEY 0411
     it(`CHECK transfer custom tokens with proof authorization`, async () => {
@@ -748,6 +747,7 @@ describe('test fuctions inside XTokenContract', () => {
     // PASS on BERKELEY 0411
  */
 
+    /*
     // PASS on BERKELEY 0411
     it('CHECK \'Delegate\' cannot be set by Signature auth', async () => {
         console.log('===================[CHECK \'Delegate\' cannot be set by Signature auth]===================');
@@ -774,7 +774,7 @@ describe('test fuctions inside XTokenContract', () => {
         console.log('========== [END]CHECK \'Delegate\' cannot be set by Signature auth ==========');
     });
     // PASS on BERKELEY 0411
-    
+    */
 /* // PASS on BERKELEY 0411
     it('CHECK \'Burn\' custom token', async () => {
         console.log('===================[CHECK \'Burn\' custom token]===================');
