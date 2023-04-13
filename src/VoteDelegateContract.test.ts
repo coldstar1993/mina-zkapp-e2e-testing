@@ -158,7 +158,7 @@ describe('test fuctions inside VoteDelegateContract', () => {
 
         // init appStatus values
         purchaseStartBlockHeight = Mina.activeInstance.getNetworkState().blockchainLength;
-        purchaseEndBlockHeight = Mina.activeInstance.getNetworkState().blockchainLength.add(12);// TODO
+        purchaseEndBlockHeight = Mina.activeInstance.getNetworkState().blockchainLength.add(18);// TODO
         tokenSupply = UInt64.from(6);
         maximumPurchasingAmount = UInt64.from(2);
 
@@ -282,6 +282,9 @@ describe('test fuctions inside VoteDelegateContract', () => {
             isLocalBlockChain
         });
 
+        console.log(`wait for 2 blocks...`);
+        await waitBlockHeightToExceed((await syncNetworkStatus()).blockchainLength.add(2));
+
         // fetch events to confirm         
         let events = await voteDelegateContract.fetchEvents(purchaseStartBlockHeight);
         console.log(`fetchEvents(${purchaseStartBlockHeight.toString()}): `, JSON.stringify(events));
@@ -389,13 +392,14 @@ describe('test fuctions inside VoteDelegateContract', () => {
             isLocalBlockChain
 
         });
-
         console.log('ZkAppAcctInfo: ', JSON.stringify(await syncAcctInfo(zkAppAddress, Field(1), isLocalBlockChain)));
         console.log('voteDelegateContractAcctInfo: ', JSON.stringify(await syncAcctInfo(voteDelegateContractAddress, Field(1), isLocalBlockChain)));
         expect(zkApp.account.delegate.get()).not.toEqual(delegate0);
         expect(zkApp.account.delegate.get()).toEqual(voteDelegateContract.targetDelegateTo.get());
 
-        // fetch events to confirm
+        // fetch events to confirm        
+        console.log(`wait for 2 blocks...`);
+        await waitBlockHeightToExceed((await syncNetworkStatus()).blockchainLength.add(2));
         let events = await zkApp.fetchEvents(purchaseEndBlockHeight);
         console.log(`fetchEvents(${purchaseEndBlockHeight.toString()}): `, JSON.stringify(events));
 
