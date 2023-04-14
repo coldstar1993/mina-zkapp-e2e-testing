@@ -1,7 +1,6 @@
 import { AccountUpdate, Bool, Experimental, fetchAccount, fetchLastBlock, Field, isReady, MerkleMap, Mina, Poseidon, PrivateKey, PublicKey, Reducer, shutdown, Signature, SmartContract, Types, UInt32, UInt64 } from 'snarkyjs';
 import { XTokenContract, NormalTokenUser } from './XTokenContract.js';
 import { Membership } from './Membership.js';
-import { fetchActions } from 'snarkyjs/dist/node/lib/fetch.js';
 import { loopUntilAccountExists, makeAndSendTransaction, syncNetworkStatus, syncAcctInfo, syncActions, waitBlockHeightToExceed } from './utils.js';
 
 describe('test fuctions inside XTokenContract', () => {
