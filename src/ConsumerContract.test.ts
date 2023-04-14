@@ -7,7 +7,8 @@ import { loopUntilAccountExists, makeAndSendTransaction, syncNetworkStatus, sync
 describe('test fuctions inside ConsumerContract', () => {
     let isLocalBlockChain = !(process.env.TEST_ON_BERKELEY! == 'true');
     let Blockchain: any;
-    let transactionFee = 100_000_000;
+    let transactionFee = 1000_000_000;
+    let icoBlocksRangeWindow = 18;
 
     let
         senderAccount: PublicKey,
@@ -145,7 +146,7 @@ describe('test fuctions inside ConsumerContract', () => {
 
         // init appStatus values
         purchaseStartBlockHeight = Mina.activeInstance.getNetworkState().blockchainLength;
-        purchaseEndBlockHeight = Mina.activeInstance.getNetworkState().blockchainLength.add(12);
+        purchaseEndBlockHeight = Mina.activeInstance.getNetworkState().blockchainLength.add(icoBlocksRangeWindow);
         tokenSupply = UInt64.from(6);
         maximumPurchasingAmount = UInt64.from(2);
 
