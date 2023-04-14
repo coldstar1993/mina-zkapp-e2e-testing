@@ -1,0 +1,18 @@
+[
+    {
+        "blockHeight": "1914",
+        "blockHash": "3NKAYUBmRShvFHUtumYrdW7KU3i9nDeJK96rZ175brJwtJJ6VXRq",
+        "parentBlockHash": "3NLMZnq9zhqYfcFVSYYXro2TM5UiJ6pXyPLv8s7fDNK4CcMB48oi",
+        "globalSlot": "3270",
+        "chainStatus": "pending",
+        "event": {
+            "data": "B62qoxLNPrb2Ne2rMsw9ULCP6RdD3rDjavefnUDLTif6raajW4pLX4g",
+            "transactionInfo": {
+                "transactionHash": "5Jv54aies9QKK1SpjfyaDWgKKpHijcxwpfdQQLdQgPeJeYPN3cDP",
+                "transactionStatus": "applied",
+                "transactionMemo": "E4YM2vTHhWEg66xpj52JErHUBU4pZ1yageL4TVDDpTTSsv8mK6YaH"
+            }
+        },
+        "type": "init-delegate-target"
+    }
+]
