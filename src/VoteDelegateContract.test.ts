@@ -290,7 +290,7 @@ describe('test fuctions inside VoteDelegateContract', () => {
         console.log(`fetchEvents(${purchaseStartBlockHeight.toString()}): `, JSON.stringify(events));
         expect(events.filter((e) => {
             return e.type == 'init-delegate-target'
-        })[0].event).toEqual(newDelegateTargetAddress);
+        })[0].event.data).toEqual(newDelegateTargetAddress);
         console.log(`trigger voteDelegateContract.initOrReset(*): tx confirmed!`);
 
         await syncAllAccountInfo();
@@ -405,7 +405,7 @@ describe('test fuctions inside VoteDelegateContract', () => {
 
         expect(events.filter((e) => {
             return e.type == 'set-delegate'
-        })[0].event).toEqual(newDelegateTargetAddress);
+        })[0].event.data).toEqual(newDelegateTargetAddress);
 
         console.log(`trigger voteDelegateContract.voteDelegateTo(*): tx confirmed!`);
 
