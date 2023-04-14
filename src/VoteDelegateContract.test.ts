@@ -10,6 +10,7 @@ describe('test fuctions inside VoteDelegateContract', () => {
 
     let Blockchain: any;
     let transactionFee = 100_000_000;
+    let icoBlocksRangeWindow = 18;
 
     let
         senderAccount: PublicKey,
@@ -158,7 +159,7 @@ describe('test fuctions inside VoteDelegateContract', () => {
 
         // init appStatus values
         purchaseStartBlockHeight = Mina.activeInstance.getNetworkState().blockchainLength;
-        purchaseEndBlockHeight = Mina.activeInstance.getNetworkState().blockchainLength.add(18);// TODO
+        purchaseEndBlockHeight = Mina.activeInstance.getNetworkState().blockchainLength.add(icoBlocksRangeWindow);// TODO
         tokenSupply = UInt64.from(6);
         maximumPurchasingAmount = UInt64.from(2);
 

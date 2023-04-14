@@ -1,4 +1,7 @@
 
+root@vmi542383:~/mina_workspace/mina-zkapp-e2e-testing-delegate# npm run test > xToken-recursive-vote-delegate.log
+(node:19434) ExperimentalWarning: VM Modules is an experimental feature. This feature could change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
 > mina-zkapp-e2e-testing@0.1.0 test
 > cross-env TEST_ON_BERKELEY=true node --max-old-space-size=8000 --experimental-vm-modules --experimental-wasm-threads node_modules/jest/bin/jest.js
 
@@ -1388,3 +1391,15 @@
       at Object.<anonymous> (src/VoteDelegateContract.test.ts:410:17)
           at runMicrotasks (<anonymous>)
 
+PASS src/VoteDelegateContract.test.ts (8800.25 s)
+  test fuctions inside VoteDelegateContract
+    ✓ CHECK all members votes to set delegate (7164026 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        8801.627 s
+Ran all test suites.
+  ●  process.exit called with "0"
+
+      at Timeout.shutdown [as _onTimeout] (node_modules/snarkyjs/src/snarky/wrapper.js:15:11)
