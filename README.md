@@ -40,7 +40,16 @@ token info inside `XTokenContract.ts`：
 
 **NOTE：both 'dynamic traffic status of Berkeley Network' and `purchaseEndBlockHeight` impact the time cost of test cases!!**
 
+## Verification Keys
+
+* [XTokenContract_verification_key.json](./src/XTokenContract_verification_key.json)
+* [Membership_verification_key.json](./src/Membership_verification_key.json)
+* [ConsumerContract_verification_key.json](./src/ConsumerContract_verification_key.json)
+* [VoteDelegateContract_verification_key.json](./src/VoteDelegateContract_verification_key.json)
+
 ## Surface Areas
+Features and corresonding Surface Areas:
+
 1) initialize or reset token info, like tokenSupply, tokenSymbol, maximumPurchasingAmount per address, zkappUri,
 	* 7Permissions
 	  * URI
@@ -75,6 +84,9 @@ token info inside `XTokenContract.ts`：
 	* 7Permissions
 		* Set Delegate
 
+8) deploy all contracts
+	* 8Deploy Smart Contract
+
 ## Unit Test
 **NOTE：both 'dynamic traffic status of Berkeley Network' and `purchaseEndBlockHeight` impact the time cost of test cases!!**
 
@@ -102,7 +114,7 @@ Totally, Run these Unit Tests in sequence will cost 40mins almost locally, and 6
 * ConsumerContract.test.ts【**!!NOTE: cost almost 10mins Locally,  at least 20 mins on Berkeley & 4G memory resource**】
     * Check thirdpart zkapp could successfully transfer custom token by holders' signature from XTokenContract.
 
-NOTE: 
+**NOTE**: 
 * You could set `cross-env TEST_ON_BERKELEY=true/false` to start unit tests.
 * For the memory resource cost of UT, pls set `--max-old-space-size=8192` for Node Runtime.
 * For the time cost of UT, pls set `testTimeout: 10000 * 1000` inside `jest.config.js` to extend jest time limitation.
@@ -129,6 +141,7 @@ npm run coverage
 ```
 
 ## How to deploy
+tips: You could see the sequences inside the test cases.
 
 * firstly, deploy `Membership` and later trigger a tx to init it as below:
 	```
@@ -148,12 +161,12 @@ npm run coverage
 * thirdly, deploy `VoteDelegateContract` and later trigger a tx to init it with Membership & XTokenContract accounts and some other parameters as below:.
 	```
 		        voteDelegateContract.initOrReset(zkAppAddress, membershipZkAppAddress, new MerkleMap().getRoot(), newDelegateTargetAddress, voteDelegateContractPrivateKey);
-
 	```
 * forthly, deploy `ConsumerContract` and later trigger a tx to init it with Membership account and some other parameters as below:.
 	```
 				consumerContract.initOrReset(zkAppAddress, UInt64.from(1), consumerContractPrivateKey);
 	```
+
 ## License
 
 [Apache-2.0](LICENSE)
