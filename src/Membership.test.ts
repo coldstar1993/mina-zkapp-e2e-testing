@@ -136,7 +136,7 @@ describe('test fuctions inside Membership', () => {
             },
             statesEqual(state1, state2) {
                 return state2.equals(state1).toBoolean();
-            },            
+            },
             isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
 
         });
@@ -167,7 +167,7 @@ describe('test fuctions inside Membership', () => {
                 },
                 statesEqual(state1, state2) {
                     return state2.equals(state1).toBoolean();
-                },            
+                },
                 isLocalBlockChain: !(process.env.TEST_ON_BERKELEY! == 'true')
 
             });
