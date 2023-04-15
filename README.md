@@ -47,6 +47,25 @@ token info inside `XTokenContract.ts`：
 * [ConsumerContract_verification_key.json](./src/ConsumerContract_verification_key.json)
 * [VoteDelegateContract_verification_key.json](./src/VoteDelegateContract_verification_key.json)
 
+Inside test cases within [XTokenContract.test.ts](./src/XTokenContract.test.ts):
+
+tips: there are many test cases inside **XTokenContract.test.ts**，so take the keys below as sample here.
+* XTokenContract address: [B62qmXpWe2WQs76dEqQ5fe4WDFfUczk4Xi1WnE1nwegGeA4An8roBF2](https://berkeley.minaexplorer.com/wallet/B62qmXpWe2WQs76dEqQ5fe4WDFfUczk4Xi1WnE1nwegGeA4An8roBF2)
+* Membership address: [B62qmrGTaq4CUyzBWdFw9H4FQvMeWQxXfXquSiwSYjsnKo6aMsoadM5](https://berkeley.minaexplorer.com/wallet/B62qmrGTaq4CUyzBWdFw9H4FQvMeWQxXfXquSiwSYjsnKo6aMsoadM5)
+
+Inside test cases within [Membership.test.ts](./src/Membership.test.ts):
+* Membership address: [B62qmrGTaq4CUyzBWdFw9H4FQvMeWQxXfXquSiwSYjsnKo6aMsoadM5](https://berkeley.minaexplorer.com/wallet/B62qmrGTaq4CUyzBWdFw9H4FQvMeWQxXfXquSiwSYjsnKo6aMsoadM5)
+
+Inside test case within [ConsumerContract.test.ts](./src/ConsumerContract.test.ts):
+* XTokenContract address: [B62qiYhW7zisUcKVtPTXrjFVy2o9Vo4FNpFh5AQsZHXDR29jmNFTXB3](https://berkeley.minaexplorer.com/wallet/B62qiYhW7zisUcKVtPTXrjFVy2o9Vo4FNpFh5AQsZHXDR29jmNFTXB3)
+* Membership address: [B62qqJfEicD5KHo1bYYJrwNCqykSjffMkboHNKD44fNbjE3bZhv2uPt](https://berkeley.minaexplorer.com/wallet/B62qqJfEicD5KHo1bYYJrwNCqykSjffMkboHNKD44fNbjE3bZhv2uPt)
+* ConsumerContract address: [B62qrif8tae3Qy6WQPf6cgMTqNR1GS6yR4LEjtZTjbB5zWNwQZSbDwF](https://berkeley.minaexplorer.com/wallet/B62qrif8tae3Qy6WQPf6cgMTqNR1GS6yR4LEjtZTjbB5zWNwQZSbDwF)
+
+Inside test case within [VoteDelegateContract.test.ts](./src/VoteDelegateContract.test.ts):
+* XTokenContract address: [B62qmueRMnsVfFsfPoVPvQL3uJxH7tNnCmt4kzEP1KFnuQXBHywuiNR](https://berkeley.minaexplorer.com/wallet/B62qmueRMnsVfFsfPoVPvQL3uJxH7tNnCmt4kzEP1KFnuQXBHywuiNR)
+* Membership address: [B62qoBDDe85WNkvdatbakQUohdZAazDVi36bxL9v6Ykc2Lt9McRimYP](https://berkeley.minaexplorer.com/wallet/B62qoBDDe85WNkvdatbakQUohdZAazDVi36bxL9v6Ykc2Lt9McRimYP)
+* VoteDelegateContract address: [B62qk4pHXXc3661iucA2LCvvgcFwKDxazTqcXqzTY7UoNYVdMQ1PcHh](https://berkeley.minaexplorer.com/wallet/B62qk4pHXXc3661iucA2LCvvgcFwKDxazTqcXqzTY7UoNYVdMQ1PcHh)
+
 ## Surface Areas
 Features and corresonding Surface Areas:
 
