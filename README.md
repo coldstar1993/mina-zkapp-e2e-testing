@@ -40,28 +40,28 @@ token info inside `XTokenContract.ts`：
 
 **NOTE：both 'dynamic traffic status of Berkeley Network' and `purchaseEndBlockHeight` impact the time cost of test cases!!**
 
-## Verification Keys
+## Verification Keys & Deployed addresses
 
 * [XTokenContract_verification_key.json](./src/XTokenContract_verification_key.json)
 * [Membership_verification_key.json](./src/Membership_verification_key.json)
 * [ConsumerContract_verification_key.json](./src/ConsumerContract_verification_key.json)
 * [VoteDelegateContract_verification_key.json](./src/VoteDelegateContract_verification_key.json)
 
-Inside test cases within [XTokenContract.test.ts](./src/XTokenContract.test.ts):
+`Inside test cases within [XTokenContract.test.ts](./src/XTokenContract.test.ts):`
 
 tips: there are many test cases inside **XTokenContract.test.ts**，so take the keys below as sample here.
 * XTokenContract address: [B62qmXpWe2WQs76dEqQ5fe4WDFfUczk4Xi1WnE1nwegGeA4An8roBF2](https://berkeley.minaexplorer.com/wallet/B62qmXpWe2WQs76dEqQ5fe4WDFfUczk4Xi1WnE1nwegGeA4An8roBF2)
 * Membership address: [B62qmrGTaq4CUyzBWdFw9H4FQvMeWQxXfXquSiwSYjsnKo6aMsoadM5](https://berkeley.minaexplorer.com/wallet/B62qmrGTaq4CUyzBWdFw9H4FQvMeWQxXfXquSiwSYjsnKo6aMsoadM5)
 
-Inside test cases within [Membership.test.ts](./src/Membership.test.ts):
+`Inside test cases within [Membership.test.ts](./src/Membership.test.ts):`
 * Membership address: [B62qmrGTaq4CUyzBWdFw9H4FQvMeWQxXfXquSiwSYjsnKo6aMsoadM5](https://berkeley.minaexplorer.com/wallet/B62qmrGTaq4CUyzBWdFw9H4FQvMeWQxXfXquSiwSYjsnKo6aMsoadM5)
 
-Inside test case within [ConsumerContract.test.ts](./src/ConsumerContract.test.ts):
+`Inside test case within [ConsumerContract.test.ts](./src/ConsumerContract.test.ts):`
 * XTokenContract address: [B62qiYhW7zisUcKVtPTXrjFVy2o9Vo4FNpFh5AQsZHXDR29jmNFTXB3](https://berkeley.minaexplorer.com/wallet/B62qiYhW7zisUcKVtPTXrjFVy2o9Vo4FNpFh5AQsZHXDR29jmNFTXB3)
 * Membership address: [B62qqJfEicD5KHo1bYYJrwNCqykSjffMkboHNKD44fNbjE3bZhv2uPt](https://berkeley.minaexplorer.com/wallet/B62qqJfEicD5KHo1bYYJrwNCqykSjffMkboHNKD44fNbjE3bZhv2uPt)
 * ConsumerContract address: [B62qrif8tae3Qy6WQPf6cgMTqNR1GS6yR4LEjtZTjbB5zWNwQZSbDwF](https://berkeley.minaexplorer.com/wallet/B62qrif8tae3Qy6WQPf6cgMTqNR1GS6yR4LEjtZTjbB5zWNwQZSbDwF)
 
-Inside test case within [VoteDelegateContract.test.ts](./src/VoteDelegateContract.test.ts):
+`Inside test case within [VoteDelegateContract.test.ts](./src/VoteDelegateContract.test.ts):`
 * XTokenContract address: [B62qmueRMnsVfFsfPoVPvQL3uJxH7tNnCmt4kzEP1KFnuQXBHywuiNR](https://berkeley.minaexplorer.com/wallet/B62qmueRMnsVfFsfPoVPvQL3uJxH7tNnCmt4kzEP1KFnuQXBHywuiNR)
 * Membership address: [B62qoBDDe85WNkvdatbakQUohdZAazDVi36bxL9v6Ykc2Lt9McRimYP](https://berkeley.minaexplorer.com/wallet/B62qoBDDe85WNkvdatbakQUohdZAazDVi36bxL9v6Ykc2Lt9McRimYP)
 * VoteDelegateContract address: [B62qk4pHXXc3661iucA2LCvvgcFwKDxazTqcXqzTY7UoNYVdMQ1PcHh](https://berkeley.minaexplorer.com/wallet/B62qk4pHXXc3661iucA2LCvvgcFwKDxazTqcXqzTY7UoNYVdMQ1PcHh)
@@ -112,20 +112,17 @@ Features and corresonding Surface Areas:
 Totally, Run these Unit Tests in sequence will cost 40mins almost locally, and 60mins almost On Berkeley.
 
 * Membership.test.ts【**!!NOTE: cost almost 10mins Locally, 20 mins on Berkeley & 4G memory resource**】
-  	* CHECK tx should fail when store an existing user
-	* CHECK tx should succeed when store an non-existing user
+  	* CHECK tx should succeed when store an non-existing user, AND fail when store an existing user
 
-* XTokenContract.test.ts【**!!NOTE: cost almost 20mins Locally, at least 120 mins on Berkeley & 8G memory resource**】
-  	* CHECK tx should succeed when purchase tokens by an non-existing user, but should fail when purchase by an existing user
-  	* CHECK tx should fail when purchase tokens with EXCEEDING precondition.network.blockchainLength
-  	* CHECK tx should fail when purchase tokens when EXCEEDING maximum purchasing amount
-  	* CHECK tx should fail when purchase tokens when (totalAmountInCirculation + purchasingAmount) > SUPPLY
-  	* CHECK if (timing-lock Mina balance when totalAmountInCirculation == SUPPLY) AND (Mina of 'cliffAmount' cannot be transferred before 'cliffTime')
-  	* CHECK if one can ONLY vote for ONE time To Process Rest Tokens AND rollup VoteNotes by reducing Actions	
-  	* CHECK transfer custom tokens with proof authorization
-	* CHECK transfer custom tokens with holders' signature
-	* CHECK burn custom tokens by holders' signature
-	* CHECK 'setDelegate' with Permission.proof cannot be set with Signature authorization
+* XTokenContract.test.ts【**!!NOTE: cost almost 80mins Locally, at least 120 mins on Berkeley & 8G memory resource**】
+	* CHECK tx should succeed when purchase tokens by an non-existing user, but should fail when purchase by an existing user
+	* CHECK tx should fail when purchase tokens when EXCEEDING maximum purchasing amount AND CHECK tx should fail when purchase tokens with EXCEEDING precondition.network.blockchainLength
+	* CHECK tx should fail when purchase tokens when (totalAmountInCirculation + purchasingAmount) > SUPPLY 
+	* CHECK if (timing-lock Mina balance when totalAmountInCirculation == SUPPLY) AND (Mina of 'cliffAmount' can be transferred after 'cliffTime')
+	* CHECK if one can ONLY vote for ONE time To Process Rest Tokens AND rollup VoteNotes by reducing Actions
+	* CHECK transfer custom tokens with proof authorization
+	* CHECK 'Delegate' cannot be set by Signature auth
+	* CHECK 'Burn' custom token
 
 * VoteDelegateContract.test.ts【**!!NOTE: cost almost 30mins Locally, at least 50 mins on Berkeley & 8G memory resource**】
   	* CHECK all members (recursively) votes to set delegate
@@ -151,12 +148,6 @@ npm run build
 ```sh
 npm run test
 npm run testw # watch mode
-```
-
-## How to run coverage
-
-```sh
-npm run coverage
 ```
 
 ## How to deploy
