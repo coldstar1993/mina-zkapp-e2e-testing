@@ -303,7 +303,7 @@ describe('test fuctions inside VoteDelegateContract', () => {
         expect(zkAppUri).toEqual('https://github.com/coldstar1993/mina-zkapp-e2e-testing');
     });
 
-    it(`CHECK all members votes to set delegate`, async () => {
+    it(`CHECK all members (recursively) votes to set delegate`, async () => {
         console.log('===================[CHECK all members votes to set delegate]===================');
 
         console.log('========================firstUser starts========================');
