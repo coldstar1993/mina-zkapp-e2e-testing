@@ -269,7 +269,7 @@ describe('test fuctions inside ConsumerContract', () => {
         expect(zkAppUri).toEqual('https://github.com/coldstar1993/mina-zkapp-e2e-testing');
     });
 
-    it(`CHECK consume tokens`, async () => {
+    it(`Check thirdpart zkapp could successfully transfer custom token by holders' signature from XTokenContract.`, async () => {
         console.log('===================[CHECK consume tokens]===================');
 
         let userPriKeyFirst = PrivateKey.random();
