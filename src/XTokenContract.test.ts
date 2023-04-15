@@ -255,7 +255,7 @@ describe('test fuctions inside XTokenContract', () => {
         expect(zkAppUri).toEqual('https://github.com/coldstar1993/mina-zkapp-e2e-testing');
     });
 
-/* 
+
     it(`CHECK tx should succeed when purchase tokens by an non-existing user, but should fail when purchase by an existing user`, async () => {
         console.log('===================[CHECK tx should succeed purchase tokens by an non-existing user] ===================')
         let totalAmountInCirculation0 = zkApp.totalAmountInCirculation.get();
@@ -299,8 +299,8 @@ describe('test fuctions inside XTokenContract', () => {
 
         console.log('========== [END]CHECK tx should succeed when purchase tokens by an non-existing user, but should fail when purchase by an existing user ==========');
     });
- */
-/*  // PASS on BERKELEY 0409
+
+    // PASS on BERKELEY 0409
     it(`CHECK tx should fail when purchase tokens when EXCEEDING maximum purchasing amount AND CHECK tx should fail when purchase tokens with EXCEEDING precondition.network.blockchainLength`, async () => {
         console.log('===================[CHECK tx should fail when purchase tokens when EXCEEDING maximum purchasing amount] ===================')
         let totalAmountInCirculation0 = zkApp.totalAmountInCirculation.get();
@@ -355,8 +355,8 @@ describe('test fuctions inside XTokenContract', () => {
 
     });
     // PASS on BERKELEY 0409
- */
-/* 
+
+
     it(`CHECK tx should fail when purchase tokens when (totalAmountInCirculation + purchasingAmount) > SUPPLY `, async () => {
         console.log('===================[CHECK tx should fail when purchase tokens when (totalAmountInCirculation + purchasingAmount) > SUPPLY ] ===================')
 
@@ -399,8 +399,8 @@ describe('test fuctions inside XTokenContract', () => {
 
         console.log('========== [END]CHECK tx should fail when purchase tokens when (totalAmountInCirculation + purchasingAmount) > SUPPLY ==========');
     });
- */
-/* // PASS on Berkeley on 0409
+
+    // PASS on Berkeley on 0409
     it(`CHECK if (timing-lock Mina balance when totalAmountInCirculation == SUPPLY) AND (Mina of 'cliffAmount' can be transferred after 'cliffTime')`, async () => {
         console.log('===================[CHECK if timing-lock Mina balance when totalAmountInCirculation == SUPPLY]===================');
 
@@ -436,7 +436,7 @@ describe('test fuctions inside XTokenContract', () => {
         expect(zkAppAcctInfo?.timing.vestingIncrement).toEqual(UInt64.from('200000000'));
     });
     // PASS on Berkeley on 0409
- */
+
 
     // PASS on Berkeley on 0411
     it(`CHECK if one can ONLY vote for ONE time To Process Rest Tokens AND rollup VoteNotes by reducing Actions`, async () => {
@@ -665,7 +665,7 @@ describe('test fuctions inside XTokenContract', () => {
     });
     // PASS on Berkeley on 0411
 
-/* 
+
     // PASS on BERKELEY 0411
     it(`CHECK transfer custom tokens with proof authorization`, async () => {
         console.log('===================[CHECK transfer custom tokens with proof authorization]===================');
@@ -744,9 +744,9 @@ describe('test fuctions inside XTokenContract', () => {
         console.log('========== [END]CHECK transfer custom tokens with proof authorization ==========');
     })
     // PASS on BERKELEY 0411
- */
 
-    /*
+
+
     // PASS on BERKELEY 0411
     it('CHECK \'Delegate\' cannot be set by Signature auth', async () => {
         console.log('===================[CHECK \'Delegate\' cannot be set by Signature auth]===================');
@@ -773,8 +773,8 @@ describe('test fuctions inside XTokenContract', () => {
         console.log('========== [END]CHECK \'Delegate\' cannot be set by Signature auth ==========');
     });
     // PASS on BERKELEY 0411
-    */
-/* // PASS on BERKELEY 0411
+
+    // PASS on BERKELEY 0411
     it('CHECK \'Burn\' custom token', async () => {
         console.log('===================[CHECK \'Burn\' custom token]===================');
         console.log('========================firstUser starts========================');
@@ -836,5 +836,5 @@ describe('test fuctions inside XTokenContract', () => {
         console.log('========== [END]CHECK \'Burn\' custom token ==========');
     });
     // PASS on BERKELEY 0411
- */
+
 });
