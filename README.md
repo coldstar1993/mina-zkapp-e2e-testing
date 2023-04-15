@@ -104,7 +104,7 @@ Totally, Run these Unit Tests in sequence will cost 40mins almost locally, and 6
 
 NOTE: 
 * You could set `cross-env TEST_ON_BERKELEY=true/false` to start unit tests.
-* For the memory resource cost of UT, pls set `--max-old-space-size=8000` for Node Runtime.
+* For the memory resource cost of UT, pls set `--max-old-space-size=8192` for Node Runtime.
 * For the time cost of UT, pls set `testTimeout: 10000 * 1000` inside `jest.config.js` to extend jest time limitation.
 
 The config above is set in `script` section inside `package.json`, so you could just run `npm run test`.
