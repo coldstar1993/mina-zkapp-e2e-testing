@@ -84,7 +84,7 @@ Totally, Run these Unit Tests in sequence will cost 40mins almost locally, and 6
   	* CHECK tx should fail when store an existing user
 	* CHECK tx should succeed when store an non-existing user
 
-* XTokenContract.test.ts【**!!NOTE: cost almost 20mins Locally, at least 60 mins on Berkeley & 6G memory resource**】
+* XTokenContract.test.ts【**!!NOTE: cost almost 20mins Locally, at least 120 mins on Berkeley & 8G memory resource**】
   	* CHECK tx should succeed when purchase tokens by an non-existing user, but should fail when purchase by an existing user
   	* CHECK tx should fail when purchase tokens with EXCEEDING precondition.network.blockchainLength
   	* CHECK tx should fail when purchase tokens when EXCEEDING maximum purchasing amount
