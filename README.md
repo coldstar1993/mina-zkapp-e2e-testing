@@ -109,7 +109,7 @@ Features and corresonding Surface Areas:
 ## Unit Test
 **NOTE：both 'dynamic traffic status of Berkeley Network' and `purchaseEndBlockHeight` impact the time cost of test cases!!**
 
-Totally, Run these Unit Tests in sequence will cost 40mins almost locally, and 60mins almost On Berkeley.
+Totally, Run these Unit Tests in sequence will cost 80mins almost locally, and 200mins almost On Berkeley.
 
 * Membership.test.ts【**!!NOTE: cost almost 10mins Locally, 20 mins on Berkeley & 4G memory resource**】
   	* CHECK tx should succeed when store an non-existing user, AND fail when store an existing user
