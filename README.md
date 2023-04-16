@@ -93,7 +93,7 @@ Features and corresonding Surface Areas:
 	* 7Permissions
 		* Set Timing
 
-6) transfer custom tokens by proof auth & by signature, burn custom tokens by signature,
+6) transfer custom tokens by proof auth & by signature, mint/burn custom tokens by signature,
 	* 2Call stack composability
 	* 9Tokens
 
