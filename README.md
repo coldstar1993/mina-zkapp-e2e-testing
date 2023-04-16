@@ -54,7 +54,7 @@ tips: there are many test cases inside **XTokenContract.test.ts**，so take the 
 * Membership address: [B62qmrGTaq4CUyzBWdFw9H4FQvMeWQxXfXquSiwSYjsnKo6aMsoadM5](https://berkeley.minaexplorer.com/wallet/B62qmrGTaq4CUyzBWdFw9H4FQvMeWQxXfXquSiwSYjsnKo6aMsoadM5)
 
 `Inside test cases within [Membership.test.ts](./src/Membership.test.ts):`
-* Membership address: [B62qmrGTaq4CUyzBWdFw9H4FQvMeWQxXfXquSiwSYjsnKo6aMsoadM5](https://berkeley.minaexplorer.com/wallet/B62qmrGTaq4CUyzBWdFw9H4FQvMeWQxXfXquSiwSYjsnKo6aMsoadM5)
+* Membership address: [B62qjjgqrq1bmUutctKJVLmvUJc8PSVGQnqYcP21kPzpJwDmpWqNCHi](https://berkeley.minaexplorer.com/wallet/B62qjjgqrq1bmUutctKJVLmvUJc8PSVGQnqYcP21kPzpJwDmpWqNCHi)
 
 `Inside test case within [ConsumerContract.test.ts](./src/ConsumerContract.test.ts):`
 * XTokenContract address: [B62qiYhW7zisUcKVtPTXrjFVy2o9Vo4FNpFh5AQsZHXDR29jmNFTXB3](https://berkeley.minaexplorer.com/wallet/B62qiYhW7zisUcKVtPTXrjFVy2o9Vo4FNpFh5AQsZHXDR29jmNFTXB3)
