@@ -294,7 +294,12 @@ describe('test fuctions inside ConsumerContract', () => {
                 tx.sign([senderKey, userPriKeyFirst]);
             },
             async getState() {
-                let consumerContractAcctInfo = await syncAcctInfo(consumerContractAddress, zkApp.token.id, isLocalBlockChain);
+                let consumerContractAcctInfo = undefined;
+                try {
+                    consumerContractAcctInfo = await syncAcctInfo(consumerContractAddress, zkApp.token.id, isLocalBlockChain);
+                } catch (error) {
+                    // no need to handle
+                }
                 console.log('consumerContractAcctInfo: ', JSON.stringify(consumerContractAcctInfo));
                 if (consumerContractAcctInfo == undefined) {
                     return '0';
