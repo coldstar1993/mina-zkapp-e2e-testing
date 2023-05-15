@@ -3,7 +3,7 @@ import { XTokenContract } from './XTokenContract.js';
 import { Membership } from './Membership.js';
 import { VoteZkProgram, VoteState } from "./vote.js";
 import { VoteDelegateContract } from './VoteDelegateContract.js';
-import { loopUntilAccountExists, makeAndSendTransaction, syncNetworkStatus, syncAcctInfo, syncActions, waitBlockHeightToExceed } from './utils.js';
+import { loopUntilAccountExists, makeAndSendTransaction, syncNetworkStatus, syncAcctInfo, waitBlockHeightToExceed } from './utils.js';
 
 describe('test fuctions inside VoteDelegateContract', () => {
     let isLocalBlockChain = !(process.env.TEST_ON_BERKELEY! == 'true');
@@ -284,7 +284,7 @@ describe('test fuctions inside VoteDelegateContract', () => {
         });
 
         console.log(`wait for 2 blocks...`);
-        await waitBlockHeightToExceed((await syncNetworkStatus()).blockchainLength.add(2));
+        await waitBlockHeightToExceed((await syncNetworkStatus(isLocalBlockChain)).blockchainLength.add(2), isLocalBlockChain);
 
         // fetch events to confirm         
         let events = await voteDelegateContract.fetchEvents(purchaseStartBlockHeight);
@@ -400,7 +400,7 @@ describe('test fuctions inside VoteDelegateContract', () => {
 
         // fetch events to confirm        
         console.log(`wait for 2 blocks...`);
-        await waitBlockHeightToExceed((await syncNetworkStatus()).blockchainLength.add(2));
+        await waitBlockHeightToExceed((await syncNetworkStatus(isLocalBlockChain)).blockchainLength.add(2), isLocalBlockChain);
         let events = await zkApp.fetchEvents(purchaseEndBlockHeight);
         console.log(`fetchEvents(${purchaseEndBlockHeight.toString()}): `, JSON.stringify(events));
 
