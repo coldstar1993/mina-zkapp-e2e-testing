@@ -112,9 +112,9 @@ let tx = await Mina.transaction(feePayer, () => {
     zkapp1.deploy();
     zkapp2.deploy();
 });
-// 序列化tx
+// 序列化tx 发送给第三方...
 let jsonTx = tx.toJSON();
-//反序列化tx
+// 网络接收到txJson, 反序列化成Tx对象
 tx = Mina.Transaction.fromJSON(JSON.parse(jsonTx));
 
 tx.transaction.feePayer.lazyAuthorization = {kind:'lazy-signature'};
